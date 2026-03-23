@@ -12,3 +12,149 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// Modèle Teams (Équipes Counter-Strike)
+model Team {
+    pageid              BigInt    @id
+    pagename            String?
+    namespace           Int?
+    objectname          String    @unique
+    name                String?
+    locations           Json?
+    region              String?
+    logo                String?
+    logourl             String?
+    logodark            String?
+    logodarkurl         String?
+    textlesslogourl     String?
+    textlesslogodarkurl String?
+    status              String?
+    createdate          DateTime? @db.Date
+    disbanddate         DateTime? @db.Date
+    earnings            BigInt?
+    earningsbyyear      Json?
+    template            String?
+    links               Json?
+    extradata           Json?
+    wiki                String?
+
+    // Relations
+    players        Player[]    @relation("TeamPlayers")
+    matchesAsTeam1 Match[]     @relation("Team1Matches")
+    matchesAsTeam2 Match[]     @relation("Team2Matches")
+    matchTeams     MatchTeam[]
+}
+
+// Modèle Players (Joueurs)
+model Player {
+    pageid         BigInt    @id
+    pagename       String?
+    namespace      Int?
+    objectname     String    @unique
+    id             String?
+    alternateid    String?
+    name           String?
+    localizedname  String?
+    type           String?
+    nationality    String?
+    nationality2   String?
+    nationality3   String?
+    region         String?
+    birthdate      DateTime? @db.Date
+    deathdate      DateTime? @db.Date
+    teampagename   String?
+    teamtemplate   String?
+    links          Json?
+    status         String?
+    earnings       Int?
+    earningsbyyear Json?
+    extradata      Json?
+    wiki           String?
+    team_id        BigInt?
+
+    // Relations
+    team         Team?         @relation("TeamPlayers", fields: [team_id], references: [pageid])
+    matchPlayers MatchPlayer[]
+
+    @@index([team_id])
+}
+
+// Modèle Matches (Matchs)
+model Match {
+    pageid             BigInt    @id
+    pagename           String?
+    namespace          Int?
+    objectname         String?
+    match2id           String?
+    match2bracketid    String?
+    status             String?
+    winner             String?
+    walkover           String?
+    resulttype         String?
+    finished           Boolean?  @default(false)
+    mode               String?
+    type               String?
+    section            String?
+    game               String?
+    patch              String?
+    links              Json?
+    bestof             Int?
+    date               DateTime?
+    dateexact          Boolean?  @default(false)
+    stream             Json?
+    vod                String?
+    tournament         String?
+    parent             String?
+    tickername         String?
+    shortname          String?
+    series             String?
+    icon               String?
+    iconurl            String?
+    icondark           String?
+    icondarkurl        String?
+    liquipediatier     String?
+    liquipediatiertype String?
+    publishertier      String?
+    extradata          Json?
+    match2bracketdata  Json?
+    match2games        Json?
+    match2opponents    Json?
+    wiki               String?
+
+    // Relations
+    team1_id     BigInt?
+    team2_id     BigInt?
+    team1        Team?         @relation("Team1Matches", fields: [team1_id], references: [pageid])
+    team2        Team?         @relation("Team2Matches", fields: [team2_id], references: [pageid])
+    matchTeams   MatchTeam[]
+    matchPlayers MatchPlayer[]
+
+    @@index([team1_id])
+    @@index([team2_id])
+    @@index([date])
+}
+
+// Modèle Many-to-Many Match-Teams
+model MatchTeam {
+    match_id BigInt
+    team_id  BigInt
+
+    match Match @relation(fields: [match_id], references: [pageid], onDelete: Cascade)
+    team  Team  @relation(fields: [team_id], references: [pageid], onDelete: Cascade)
+
+    @@id([match_id, team_id])
+    @@index([team_id])
+}
+
+// Modèle Many-to-Many Match-Players
+model MatchPlayer {
+    match_id  BigInt
+    player_id BigInt
+
+    match  Match  @relation(fields: [match_id], references: [pageid], onDelete: Cascade)
+    player Player @relation(fields: [player_id], references: [pageid], onDelete: Cascade)
+
+    @@id([match_id, player_id])
+    @@index([player_id])
+}
+

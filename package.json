@@ -1,0 +1,33 @@
+{
+    "name": "liquipedia-match-importer",
+    "version": "1.0.0",
+    "description": "Import matches from Liquipedia API into PostgreSQL database",
+    "main": "importation.js",
+    "scripts": {
+        "start": "node importation.js",
+        "dev": "nodemon importation.js",
+        "start:players": "node importation_players.js",
+        "dev:players": "nodemon importation_players.js",
+        "start:teams": "node equipes_cs.js",
+        "prisma:generate": "prisma generate",
+        "prisma:migrate": "prisma migrate dev"
+    },
+    "keywords": [
+        "liquipedia",
+        "api",
+        "postgresql",
+        "matches"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@prisma/client": "^7.5.0",
+        "axios": "^1.6.0",
+        "dotenv": "^16.3.1",
+        "pg": "^8.11.3",
+        "prisma": "^7.5.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.2"
+    }
+}
