@@ -4,7 +4,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Import des variables d'environnement
-require('dotenv').config();
+import * as dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const API_KEY_PLAYER = process.env.LIQUIPEDIA_API_KEY_PLAYER;
 const DB_PASSWORD = process.env.POSTGRES_PASSWORD;
@@ -170,7 +175,7 @@ async function updatePlayers(): Promise<boolean> {
                         const playerTeamName = player.teampagename;
                         if (playerTeamName) {
                             const result = await client.query(
-                                "SELECT pageid FROM teams WHERE pagename = $1",
+                                "SELECT pageid FROM team WHERE pagename = $1",
                                 [playerTeamName]
                             );
                             teamId = result.rows.length > 0 ? result.rows[0].pageid : null;
@@ -191,7 +196,7 @@ async function updatePlayers(): Promise<boolean> {
                     }
 
                     const query = `
-            INSERT INTO players (
+            INSERT INTO player (
                 pageid, pagename, namespace, objectname, id, alternateid, name, localizedname, type, 
                 nationality, nationality2, nationality3, region, birthdate, deathdate, teampagename, 
                 teamtemplate, links, status, earnings, earningsbyyear, extradata, wiki, team_id
