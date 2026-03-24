@@ -1,7 +1,8 @@
 <?php
-function renderMatchBar($team1Logo, $team1Name, $score, $team2Name, $team2Logo, $date)
+function renderMatchBar($team1Logo, $team1Name, $score, $team2Name, $team2Logo, $date, $link)
 {
-    ?>
+?>
+<a href="<?php echo $link; ?>" class="match-link">
     <div class="match-bar">
 
         <div class="team">
@@ -19,7 +20,8 @@ function renderMatchBar($team1Logo, $team1Name, $score, $team2Name, $team2Logo, 
             <img src="<?php echo $team2Logo; ?>" alt="">
         </div>
 
-    </div><?php
+    </div>
+</a><?php
 }
 ?><style>
 .match-bar {
@@ -83,5 +85,12 @@ function renderMatchBar($team1Logo, $team1Name, $score, $team2Name, $team2Logo, 
 .date {
     font-size: 12px;
     opacity: 0.7;
-}</style>
+}
+
+.match-link {
+    text-decoration: none;
+    display: block;
+    width: 100%;
+}
+</style>
 

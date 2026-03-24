@@ -29,7 +29,8 @@
                 "2 - 0",
                 "Faze",
                 "/img/faze.png",
-                "24/03/2026"
+                "24/03/2026",
+                "/pages/DescriptionMatch.php?team1=Team Vitality&team2=Faze&score=2-0"
             );
 
             renderMatchBar(
@@ -38,7 +39,8 @@
                 "1 - 2",
                 "Team Spirit",
                 "/img/spirit.png",
-                "23/03/2026"
+                "23/03/2026",
+                "/pages/DescriptionMatch.php?team1=Mouz&team2=Team Spirit&score=1-2"
             );
 
             renderMatchBar(
@@ -47,7 +49,8 @@
                 "1 - 2",
                 "Mouz",
                 "/img/mouz.png",
-                "23/03/2026"
+                "23/03/2026",
+                "/pages/DescriptionMatch.php?team1=Team Vitality&team2=Mouz&score=1-2"
             );
 
             renderMatchBar(
@@ -56,7 +59,8 @@
                 "1 - 2",
                 "Team Spirit",
                 "/img/spirit.png",
-                "23/03/2026"
+                "23/03/2026",
+                "/pages/DescriptionMatch.php?team1=Faze&team2=Team Spirit&score=1-2"
             );
             ?>
 
