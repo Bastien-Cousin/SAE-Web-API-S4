@@ -34,7 +34,7 @@
             </li>
 
             <li>
-                <a href="#">Prédiction</a>
+                <a href="/pages/Prediction.php">Prédiction</a>
             </li>
         </ul>
     </div>
