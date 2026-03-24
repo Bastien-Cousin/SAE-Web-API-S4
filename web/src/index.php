@@ -10,12 +10,13 @@
 <body>
 
     <?php include 'components/navbar.php'; ?>
-    <!-- 🎮 HERO -->
+    <!-- HERO -->
     <section class="hero">
         <div class="hero-content">
             <h2>COUNTER-STRIKE 2</h2>
             <p>Le FPS compétitif ultime</p>
             <a href="#" class="btn">Découvrir</a>
+            <a href="#" class="btn">Prédiction</a>
         </div>
     </section>
 
