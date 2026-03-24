@@ -42,6 +42,7 @@
   "exclude": [
     "tests",
     "node_modules",
-    "dist"
+    "dist",
+    "prisma.config.ts"
   ]
 }
