@@ -175,7 +175,7 @@ async function updatePlayers(): Promise<boolean> {
                         const playerTeamName = player.teampagename;
                         if (playerTeamName) {
                             const result = await client.query(
-                                "SELECT pageid FROM teams WHERE pagename = $1",
+                                "SELECT pageid FROM team WHERE pagename = $1",
                                 [playerTeamName]
                             );
                             teamId = result.rows.length > 0 ? result.rows[0].pageid : null;
@@ -196,7 +196,7 @@ async function updatePlayers(): Promise<boolean> {
                     }
 
                     const query = `
-            INSERT INTO players (
+            INSERT INTO player (
                 pageid, pagename, namespace, objectname, id, alternateid, name, localizedname, type, 
                 nationality, nationality2, nationality3, region, birthdate, deathdate, teampagename, 
                 teamtemplate, links, status, earnings, earningsbyyear, extradata, wiki, team_id
