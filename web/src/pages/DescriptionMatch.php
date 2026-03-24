@@ -15,6 +15,7 @@
         $team1 = $_GET['team1'] ?? 'Team A';
         $team2 = $_GET['team2'] ?? 'Team B';
         $score = $_GET['score'] ?? '0-0';
+        $mapsParam = $_GET['maps'] ?? '';
 
         list($score1, $score2) = explode('-', $score);
 
@@ -35,9 +36,22 @@
         $logo1 = "/img/" . ($logoMap[$team1] ?? "default.png");
         $logo2 = "/img/" . ($logoMap[$team2] ?? "default.png");
 
-        $nbMaps = ($score1 == 2 && $score2 == 1) || ($score2 == 2 && $score1 == 1) ? 3 : 2;
+        $mapsData = [];
 
-        $maps = ["Inferno", "Mirage", "Nuke"];
+        if (!empty($mapsParam)) {
+            $mapsArray = explode(';', $mapsParam);
+
+            foreach ($mapsArray as $mapString) {
+                list($mapName, $scores) = explode(':', $mapString);
+                list($s1, $s2) = explode('-', $scores);
+
+                $mapsData[] = [
+                    "name" => $mapName,
+                    "team1" => (int) $s1,
+                    "team2" => (int) $s2
+                ];
+            }
+        }
         ?>
 
             <a href="/pages/AccueilMatch.php" class="back-btn"> ← Retour</a>
@@ -63,26 +77,17 @@
             </div>
 
             <div
-                class="maps"><?php
-                for ($i = 0; $i < $nbMaps; $i++) {
+                class="maps">
 
-                    if ($i % 2 == 0) {
-                        $left = 13;
-                        $right = 9;
-                    } else {
-                        $left = 9;
-                        $right = 13;
-                    }
+                <?php foreach ($mapsData as $map): ?>
 
-                    echo "
-                <div class='map'>
-                    <span class='score-left'>$left</span>
-                    <span class='map-name'>{$maps[$i]}</span>
-                    <span class='score-right'>$right</span>
-                </div>
-                ";
-                }
-                ?>
+                    <div class="map">
+                        <span class="score-left"><?= $map["team1"] ?></span>
+                        <span class="map-name"><?= $map["name"] ?></span>
+                        <span class="score-right"><?= $map["team2"] ?></span>
+                    </div>
+
+                <?php endforeach; ?>
 
             </div>
 
@@ -208,3 +213,4 @@
         }
     </style>
 </html>
+
