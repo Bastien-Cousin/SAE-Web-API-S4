@@ -55,15 +55,11 @@ function renderTeamSlot(?array $team, ?array $opponent, bool $played): void
     </div>
 <?php
 }
-
 function renderBracket(string $tournamentName, array $rounds, ?array $thirdPlace = null): void
 {
     $totalRounds = count($rounds);
 ?>
     <section class="bracket">
-        <header class="bracket__header">
-            <h2 class="bracket__title"><?= htmlspecialchars($tournamentName) ?></h2>
-        </header>
 
         <div class="bracket__body">
             <div class="bracket__rounds" style="--total-rounds: <?= $totalRounds ?>">
@@ -80,13 +76,12 @@ function renderBracket(string $tournamentName, array $rounds, ?array $thirdPlace
                         <div class="bracket__matches">
                             <?php foreach ($matches as $match):
                                 renderMatch($match, $isFinal ? 'lg' : 'md');
-                            ?>
-                            <?php endforeach; ?>
+                            endforeach; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
 
-            </div><!-- /.bracket__rounds -->
+            </div>
 
             <?php if ($thirdPlace !== null): ?>
                 <div class="bracket__third-place">
@@ -94,11 +89,12 @@ function renderBracket(string $tournamentName, array $rounds, ?array $thirdPlace
                     <?php renderMatch($thirdPlace, 'sm'); ?>
                 </div>
             <?php endif; ?>
-        </div><!-- /.bracket__body -->
+        </div>
 
     </section>
 <?php
 }
+
 
 function bracketStyles(): void
 {
