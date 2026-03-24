@@ -39,7 +39,9 @@
         </ul>
     </div>
     <div class="auth_logo">
-        <img src="../img/login.png" alt="S'authentifier">
+        <a href="/pages/Connexion.php">
+            <img src="../img/login.png" alt="S'authentifier">
+        </a>
     </div>
 </nav>
 
