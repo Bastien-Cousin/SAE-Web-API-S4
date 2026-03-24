@@ -13,8 +13,8 @@ datasource db {
   provider = "postgresql"
 }
 
-// Modèle Teams (Équipes Counter-Strike)
-model Team {
+// Modèle teams (Équipes Counter-Strike)
+model team {
     pageid              BigInt    @id
     pagename            String?
     namespace           Int?
@@ -39,14 +39,14 @@ model Team {
     wiki                String?
 
     // Relations
-    players        Player[]    @relation("TeamPlayers")
-    matchesAsTeam1 Match[]     @relation("Team1Matches")
-    matchesAsTeam2 Match[]     @relation("Team2Matches")
-    matchTeams     MatchTeam[]
+    players        player[]    @relation("teamplayers")
+    matchesAsteam1 match[]     @relation("team1matches")
+    matchesAsteam2 match[]     @relation("team2matches")
+    matchteams     matchteam[]
 }
 
-// Modèle Players (Joueurs)
-model Player {
+// Modèle players (Joueurs)
+model player {
     pageid         BigInt    @id
     pagename       String?
     namespace      Int?
@@ -73,14 +73,14 @@ model Player {
     team_id        BigInt?
 
     // Relations
-    team         Team?         @relation("TeamPlayers", fields: [team_id], references: [pageid])
-    matchPlayers MatchPlayer[]
+    team         team?         @relation("teamplayers", fields: [team_id], references: [pageid])
+    matchplayers matchplayer[]
 
     @@index([team_id])
 }
 
-// Modèle Matches (Matchs)
-model Match {
+// Modèle matches (matchs)
+model match {
     pageid             BigInt    @id
     pagename           String?
     namespace          Int?
@@ -124,35 +124,35 @@ model Match {
     // Relations
     team1_id     BigInt?
     team2_id     BigInt?
-    team1        Team?         @relation("Team1Matches", fields: [team1_id], references: [pageid])
-    team2        Team?         @relation("Team2Matches", fields: [team2_id], references: [pageid])
-    matchTeams   MatchTeam[]
-    matchPlayers MatchPlayer[]
+    team1        team?         @relation("team1matches", fields: [team1_id], references: [pageid])
+    team2        team?         @relation("team2matches", fields: [team2_id], references: [pageid])
+    matchteams   matchteam[]
+    matchplayers matchplayer[]
 
     @@index([team1_id])
     @@index([team2_id])
     @@index([date])
 }
 
-// Modèle Many-to-Many Match-Teams
-model MatchTeam {
+// Modèle Many-to-Many match-teams
+model matchteam {
     match_id BigInt
     team_id  BigInt
 
-    match Match @relation(fields: [match_id], references: [pageid], onDelete: Cascade)
-    team  Team  @relation(fields: [team_id], references: [pageid], onDelete: Cascade)
+    match match @relation(fields: [match_id], references: [pageid], onDelete: Cascade)
+    team  team  @relation(fields: [team_id], references: [pageid], onDelete: Cascade)
 
     @@id([match_id, team_id])
     @@index([team_id])
 }
 
-// Modèle Many-to-Many Match-Players
-model MatchPlayer {
+// Modèle Many-to-Many match-players
+model matchplayer {
     match_id  BigInt
     player_id BigInt
 
-    match  Match  @relation(fields: [match_id], references: [pageid], onDelete: Cascade)
-    player Player @relation(fields: [player_id], references: [pageid], onDelete: Cascade)
+    match  match  @relation(fields: [match_id], references: [pageid], onDelete: Cascade)
+    player player @relation(fields: [player_id], references: [pageid], onDelete: Cascade)
 
     @@id([match_id, player_id])
     @@index([player_id])
