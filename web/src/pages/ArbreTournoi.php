@@ -1,6 +1,3 @@
-<?php
-require '../components/arbre.php'; // le composant bracket
-?>
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -9,18 +6,21 @@ require '../components/arbre.php'; // le composant bracket
     <title>Arbre Tournoi</title>
     <link rel="stylesheet" href="../style.css">
 </head>
+<?php include '../components/navbar.php'; ?>
 
 <body>
 
-    <?php include '../components/navbar.php'; ?>
+    <?php
+    require '../components/arbre.php'; // le composant bracket
+    ?>
 
     <?php
     $rounds = [ /* ... */];
     $thirdPlace = [ /* ... */];
 
     bracketStyles();
-    renderBracket("CS2 Championship", $rounds, $thirdPlace);
     ?>
+
 
 </body>
 
