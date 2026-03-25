@@ -32,10 +32,6 @@ sleep 2
 echo "Running Prisma migrations..."
 npx prisma migrate deploy
 
-# Run seed
-echo "Seeding database..."
-npx prisma db seed
-
 # Start application
 echo "✓ Starting application..."
 exec npm run dev
