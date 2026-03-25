@@ -111,7 +111,7 @@ async function updateMatches(): Promise<void> {
     const MAX_MATCHES: number = 5000;
     const params: PaginationParams = {
         wiki: 'counterstrike',
-        conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]]) AND [[date::>2020-01-01]]',
+        conditions: '[[liquipediatier::1]] AND [[date::>2020-01-01]]',
         limit: 100,
         offset: 0
     };
