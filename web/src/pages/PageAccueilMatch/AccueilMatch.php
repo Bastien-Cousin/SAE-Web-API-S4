@@ -1,27 +1,27 @@
 <!DOCTYPE html>
 <html lang="fr">
 
-    <head>
-        <meta charset="UTF-8">
-        <title>CS2 - Accueil Tournoi</title>
-        <link rel="stylesheet" href="../style.css">
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <title>CS2 - Accueil Tournoi</title>
+    <link rel="stylesheet" href="AccueilMatch.css">
+</head>
 
-    <body>
-        <?php include '../components/navbar.php'; ?>
-        <div class="filters">
-            <button class="filter-btn">Maps</button>
-            <button class="filter-btn">Équipe</button>
-            <button class="filter-btn">Score</button>
-            <button class="filter-btn">Date</button>
+<body>
+    <?php include '../components/navbar.php'; ?>
+    <div class="filters">
+        <button class="filter-btn">Maps</button>
+        <button class="filter-btn">Équipe</button>
+        <button class="filter-btn">Score</button>
+        <button class="filter-btn">Date</button>
 
-            <button class="filter-btn filter-blue">Filtrer</button>
-            <button class="filter-btn filter-green">Rechercher</button>
-        </div>
+        <button class="filter-btn filter-blue">Filtrer</button>
+        <button class="filter-btn filter-green">Rechercher</button>
+    </div>
 
-        <?php include '../components/matchBar.php'; ?>
+    <?php include '../components/matchBar.php'; ?>
 
-        <div class="matches">
+    <div class="matches">
 
         <?php
 
@@ -67,45 +67,7 @@
 
         ?>
 
-        </div>
-    </body>
-
-    <style>
-        body {
-            background-color: white;
-        }
-
-        .filters {
-            display: flex;
-            gap: 10px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .filter-btn {
-            padding: 8px 14px;
-            border: 2px solid black;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #1b265c;
-            color: white;
-            transition: 0.2s;
-            margin: 20px 0 20px 0;
-        }
-
-        .filter-btn:hover {
-            opacity: 0.8;
-        }
-
-        .filter-blue {
-            background-color: #1e3a8a;
-        }
-
-        .filter-green {
-            background-color: #16a34a;
-        }
-    </style>
+    </div>
+</body>
 
 </html>
-
