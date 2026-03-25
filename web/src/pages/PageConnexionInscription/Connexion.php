@@ -9,14 +9,14 @@
 </head>
 
 <body>
-    <a href="../index.php" id="bouton-retour">Retourner à l'accueil</a>
+    <a href="../../index.php" id="bouton-retour">Retourner à l'accueil</a>
     <form bindsubmit="handleLogin">
         <h1>Connexion</h1>
         <label for="email">Email</label>
         <input type="email" id="email" placeholder="votremail@gmail.com">
         <label for="password">Mot de passe</label>
         <input type="password" id="password" placeholder="**********">
-        <p>Pas encore de compte ? <a href="/pages/Inscription.php">Inscrivez-vous</a></p>
+        <p>Pas encore de compte ? <a href="./Inscription.php">Inscrivez-vous</a></p>
         <button type="submit">Se connecter</button>
     </form>
 </body>
