@@ -14,9 +14,9 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:setup": "npm run db:push && npm run db:seed",
-    "import:teams": "docker compose exec api npx tsx ./src/import_matches/equipes_cs.ts",
-    "import:players": "docker compose exec api npx tsx ./src/import_matches/joueurs_cs.ts",
-    "import:matches": "docker compose exec api npx tsx ./src/import_matches/matchs_cs.ts",
+    "import:teams": "npx tsx ./src/import_matches/equipes_cs.ts",
+    "import:players": "npx tsx ./src/import_matches/joueurs_cs.ts",
+    "import:matches": "npx tsx ./src/import_matches/matchs_cs.ts",
     "import:all": "npm run import:teams && npm run import:players && npm run import:matches",
     "setup": "npm run db:setup && npm run import:all"
   },
