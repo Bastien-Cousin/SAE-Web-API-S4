@@ -45,7 +45,7 @@ const pool = new Pool({
 });
 
 // Interface pour les données d'équipe
-interface Team {
+interface team {
     pageid: number;
     pagename?: string;
     namespace?: number;
@@ -88,7 +88,7 @@ async function updateTeams(): Promise<void> {
     console.log(`⏰ ${new Date().toLocaleString()}`);
     console.log('='.repeat(60));
 
-    const teamsData: Team[] = [];
+    const teamsData: team[] = [];
     const params: PaginationParams = {
         wiki: 'counterstrike',
         limit: 100,
@@ -104,7 +104,7 @@ async function updateTeams(): Promise<void> {
             console.log(`\n📄 Page ${page} - Offset: ${params.offset}`);
 
             try {
-                const response = await axios.get<{ result: Team[] }>(url, {
+                const response = await axios.get<{ result: team[] }>(url, {
                     headers: headers,
                     params: params,
                     timeout: 10000
@@ -113,7 +113,7 @@ async function updateTeams(): Promise<void> {
                 console.log(`   Status Code: ${response.status}`);
 
                 if (response.status === 200) {
-                    const data: Team[] = response.data.result || [];
+                    const data: team[] = response.data.result || [];
                     console.log(`   ✅ ${data.length} équipes récupérées`);
 
                     if (data.length === 0) {
@@ -158,7 +158,7 @@ async function updateTeams(): Promise<void> {
             for (const team of teamsData) {
                 try {
                     // Vérifier si l'équipe existe déjà
-                    const checkQuery: string = 'SELECT 1 FROM "Team" WHERE pageid = $1';
+                    const checkQuery: string = 'SELECT 1 FROM "team" WHERE pageid = $1';
                     const existsResult = await client.query(checkQuery, [team.pageid]);
 
                     if (existsResult.rows.length > 0) {
@@ -189,7 +189,7 @@ async function updateTeams(): Promise<void> {
                     }
 
                     const query: string = `
-            INSERT INTO "Team" (
+            INSERT INTO "team" (
                 pageid, pagename, namespace, objectname, name, locations, region, logo, logourl, logodark, 
                 logodarkurl, textlesslogourl, textlesslogodarkurl, status, createdate, disbanddate, earnings, 
                 earningsbyyear, template, links, extradata

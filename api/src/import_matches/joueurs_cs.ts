@@ -70,13 +70,13 @@ async function updatePlayers(): Promise<boolean> {
     console.log(`⏰ ${new Date().toLocaleString()}`);
     console.log("=".repeat(60));
 
-    interface Player {
+    interface player {
         [key: string]: any;
         name?: string;
         teampagename?: string;
     }
 
-    const allPlayers: Map<string | undefined, Player[]> = new Map();
+    const allPlayers: Map<string | undefined, player[]> = new Map();
     let totalFetched = 0;
     let offset = 0;
     let page = 1;

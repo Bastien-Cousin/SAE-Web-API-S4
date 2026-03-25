@@ -8,6 +8,32 @@ Les étudiants travailleront **en groupe de 3 à 5**, via **GitHub**, et devront
 
 ---
 
+## 🚀 Démarrage Rapide
+
+### Prérequis
+- Docker & Docker Compose installés
+
+### Installation et lancement
+
+1. **Démarrer les conteneurs Docker** :
+   ```bash
+   docker compose up -d
+   ```
+
+2. **Importer les données** (une fois seulement) :
+   ```bash
+   docker compose exec api npx tsx ./src/import_matches/equipes_cs.ts
+   docker compose exec api npx tsx ./src/import_matches/joueurs_cs.ts
+   docker compose exec api npx tsx ./src/import_matches/matchs_cs.ts
+   ```
+
+3. **Accéder à l'application** :
+   - 🌐 Web : http://localhost:8080
+   - 🔌 API : http://localhost:3070
+   - 🗄️ PostgreSQL : localhost:5432
+
+---
+
 ## 📘 Sujet de la SAÉ
 
 ### 🎯 Contexte général

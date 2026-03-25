@@ -1,4 +1,4 @@
-#!/bin/sh
+﻿#!/bin/sh
 set -e
 
 echo "PostgreSQL Host: $DB_HOST:$DB_PORT"

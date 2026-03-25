@@ -20,8 +20,9 @@ COPY . .
 
 # 6. Script d'entrypoint qui attend PostgreSQL
 COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh && \
+    sed -i 's/\r$//' /app/entrypoint.sh
 
 EXPOSE 3070
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
