@@ -7,7 +7,21 @@
     "dev": "nodemon --exec tsx ./src/index.ts",
     "build": "rm -rf dist && tsc",
     "start": "node dist/index.js",
-    "test": "vitest"
+    "test": "vitest",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:setup": "npm run db:push && npm run db:seed",
+    "import:teams": "docker-compose exec api npx tsx src/import_matches/equipes_cs.ts",
+    "import:players": "docker-compose exec api npx tsx src/import_matches/joueurs_cs.ts",
+    "import:matches": "docker-compose exec api npx tsx src/import_matches/matchs_cs.ts",
+    "import:all": "npm run import:teams && npm run import:players && npm run import:matches",
+    "setup": "npm run db:setup && npm run import:all"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
@@ -15,7 +29,7 @@
   "type": "module",
   "dependencies": {
     "@prisma/adapter-pg": "^7.3.0",
-    "@prisma/client": "^7.3.0",
+    "@prisma/client": "^7.5.0",
     "axios": "^1.13.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
@@ -30,8 +44,8 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@types/yamljs": "^0.2.34",
     "@vitest/coverage-v8": "^4.1.0",
-    "nodemon": "^3.1.11",
-    "prisma": "^7.3.0",
+    "nodemon": "^3.1.14",
+    "prisma": "^7.5.0",
     "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",

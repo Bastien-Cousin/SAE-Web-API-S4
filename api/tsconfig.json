@@ -43,6 +43,7 @@
     "tests",
     "node_modules",
     "dist",
+    "prisma",
     "prisma.config.ts"
   ]
 }

@@ -5,12 +5,12 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
-  // output   = "../src/generated/prisma"
+    provider = "prisma-client-js"
+    // output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
 }
 
 // Modèle teams (Équipes Counter-Strike)
@@ -43,6 +43,8 @@ model team {
     matchesAsteam1 match[]     @relation("team1matches")
     matchesAsteam2 match[]     @relation("team2matches")
     matchteams     matchteam[]
+
+    @@map("team")
 }
 
 // Modèle players (Joueurs)
@@ -77,6 +79,7 @@ model player {
     matchplayers matchplayer[]
 
     @@index([team_id])
+    @@map("player")
 }
 
 // Modèle matches (matchs)
@@ -132,6 +135,7 @@ model match {
     @@index([team1_id])
     @@index([team2_id])
     @@index([date])
+    @@map("match")
 }
 
 // Modèle Many-to-Many match-teams
@@ -144,6 +148,7 @@ model matchteam {
 
     @@id([match_id, team_id])
     @@index([team_id])
+    @@map("matchteam")
 }
 
 // Modèle Many-to-Many match-players
@@ -156,5 +161,5 @@ model matchplayer {
 
     @@id([match_id, player_id])
     @@index([player_id])
+    @@map("matchplayer")
 }
-
