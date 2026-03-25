@@ -73,7 +73,7 @@
             'statut' => 'Actif',
             'role' => 'Sniper',
             'argent_gagne' => '900 000 €',
-            'logo' => '',
+            'logo' => 'https://cdn.tradeit.gg/team-logos%2Fteam-vitality_200x200.webp',
             'couleur_logo' => '#40c0f0',
         ],
         [
