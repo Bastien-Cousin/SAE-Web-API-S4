@@ -1,0 +1,77 @@
+.player-card {
+    position: relative;
+    width: 200px;
+    border: 2px solid #ccc;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.card-logo {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.card-logo img {
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+}
+
+.logo-placeholder {
+    font-size: 60px;
+    color: var(--card-color);
+}
+
+.card-info {
+    position: relative;
+    z-index: 1;
+    padding: 14px 12px;
+    text-align: center;
+}
+
+.card-info p {
+    margin: 4px 0;
+}
+
+.info-pays {
+    font-size: 12px;
+    color: #666;
+    text-align: left;
+}
+
+.info-pseudo {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.info-nom {
+    font-size: 13px;
+    color: #333;
+}
+
+.info-age {
+    font-size: 13px;
+    color: #555;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-around;
+    margin: 6px 0;
+    font-size: 12px;
+    color: #444;
+    gap: 8px;
+}
+
+.info-argent {
+    font-size: 13px;
+    font-weight: bold;
+    color: #2a7d2a;
+}
