@@ -209,15 +209,3 @@ ALTER TABLE "matchplayer" ADD CONSTRAINT "matchplayer_match_id_fkey" FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE "matchplayer" ADD CONSTRAINT "matchplayer_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "player"("pageid") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "matchteam" ADD CONSTRAINT "matchteam_match_id_fkey" FOREIGN KEY ("match_id") REFERENCES "match"("pageid") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "matchteam" ADD CONSTRAINT "matchteam_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "team"("pageid") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "matchplayer" ADD CONSTRAINT "matchplayer_match_id_fkey" FOREIGN KEY ("match_id") REFERENCES "match"("pageid") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "matchplayer" ADD CONSTRAINT "matchplayer_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "player"("pageid") ON DELETE CASCADE ON UPDATE CASCADE;
