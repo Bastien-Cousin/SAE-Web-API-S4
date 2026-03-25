@@ -42,3 +42,4 @@ function afficherCarteJoueur(array $joueur): void
     </div><?php
 }
 ?>
+

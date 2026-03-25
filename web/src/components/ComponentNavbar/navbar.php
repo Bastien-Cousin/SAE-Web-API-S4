@@ -1,5 +1,5 @@
 <nav class="navbar">
-    <div class="logo_area"><img src="../img/ImagesDivers/logo_site.png" alt="Logo du site"></div>
+    <div class="logo_area"><img src='https://i.postimg.cc/FK3c9qmv/Gemini-Generated-Image-ip05muip05muip05-removebg-preview.png' alt='Logo du site'></div>
     <div class="nav_buttons">
         <ul>
             <li>
@@ -40,7 +40,7 @@
     </div>
     <div class="auth_logo">
         <a href="/pages/PageConnexionInscription/Connexion.php">
-            <img src="../img/ImagesDivers/login.png" alt="S'authentifier">
+            <img src="https://i.postimg.cc/mryDpGRm/login.png" alt="S'authentifier">
         </a>
     </div>
 </nav>

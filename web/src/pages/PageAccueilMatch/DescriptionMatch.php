@@ -4,12 +4,20 @@
     <head>
         <meta charset="UTF-8">
         <title>Description Match</title>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+        <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+
+        <link rel="stylesheet" href="../../style.css">
+        <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
         <link rel="stylesheet" href="DescriptionMatch.css">
     </head>
 
     <body>
 
-        <?php include '../components/navbar.php'; ?>
+        <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
 
         <?php
         $team1 = $_GET['team1'] ?? 'Team A';
@@ -19,6 +27,7 @@
 
         list($score1, $score2) = explode('-', $score);
 
+        // Mapping logos
         $logoMap = [
             "Team Vitality" => "vitality.png",
             "Vitality" => "vitality.png",
@@ -33,9 +42,13 @@
             "FaZe" => "faze.png"
         ];
 
-        $logo1 = "/img/" . ($logoMap[$team1] ?? "default.png");
-        $logo2 = "/img/" . ($logoMap[$team2] ?? "default.png");
+        // Chemin cohérent avec AccueilMatch
+        $baseLogoPath = "/img/LogosEquipes/";
 
+        $logo1 = $baseLogoPath . ($logoMap[$team1] ?? "default.png");
+        $logo2 = $baseLogoPath . ($logoMap[$team2] ?? "default.png");
+
+        // Maps parsing
         $mapsData = [];
 
         if (!empty($mapsParam)) {
@@ -54,14 +67,14 @@
         }
         ?>
 
-            <a href="/pages/AccueilMatch.php" class="back-btn"> ← Retour</a>
+        <!-- Bouton retour --><a href="/pages/PageAccueilMatch/AccueilMatch.php" class="back-btn"> ← Retour</a>
 
         <div class="match-details">
 
             <div class="match-header">
 
                 <div class="team">
-                    <img src="<?php echo $logo1; ?>" alt="">
+                    <img src="<?php echo $logo1; ?>" alt="Logo équipe 1">
                     <h2><?php echo $team1; ?></h2>
                 </div>
 
@@ -71,7 +84,7 @@
 
                 <div class="team">
                     <h2><?php echo $team2; ?></h2>
-                    <img src="<?php echo $logo2; ?>" alt="">
+                    <img src="<?php echo $logo2; ?>" alt="Logo équipe 2">
                 </div>
 
             </div>
