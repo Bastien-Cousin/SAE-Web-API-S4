@@ -1,11 +1,11 @@
 <?php
-function renderTeamCard($logo, $name)
+function renderTeamCard($logo, $name, $key)
 {
     ?>
-    <div class="team-card">
+    <a href="/pages/PageAccueilEquipe/DescriptionEquipe.php?team=<?php echo $key; ?>" class="team-card">
         <img src="<?php echo $logo; ?>" alt="<?php echo $name; ?>">
         <span><?php echo $name; ?></span>
-    </div><?php
+    </a><?php
 }
 ?>
 

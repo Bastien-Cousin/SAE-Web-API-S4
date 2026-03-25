@@ -31,10 +31,10 @@
         <div
             class="teams"><?php
 
-            renderTeamCard("/img/LogosEquipes/vitality.png", "Team Vitality");
-            renderTeamCard("/img/LogosEquipes/faze.png", "FaZe");
-            renderTeamCard("/img/LogosEquipes/mouz.png", "Mouz");
-            renderTeamCard("/img/LogosEquipes/spirit.png", "Team Spirit");
+            renderTeamCard("/img/LogosEquipes/vitality.png", "Team Vitality", "vitality");
+            renderTeamCard("/img/LogosEquipes/faze.png", "FaZe", "faze");
+            renderTeamCard("/img/LogosEquipes/mouz.png", "Mouz", "mouz");
+            renderTeamCard("/img/LogosEquipes/spirit.png", "Team Spirit", "spirit");
 
             ?>
         </div>
