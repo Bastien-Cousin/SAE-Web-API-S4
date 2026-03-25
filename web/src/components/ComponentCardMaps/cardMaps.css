@@ -1,0 +1,87 @@
+.map-card {
+    width: 280px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    font-family: Arial, sans-serif;
+}
+
+.map-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+}
+
+.card-image-container {
+    width: 100%;
+    height: 160px;
+    overflow: hidden;
+    background: #f0f0f0;
+}
+
+.card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-placeholder {
+    width: 100%;
+    height: 100%;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+}
+
+.placeholder-line {
+    height: 10px;
+    background: linear-gradient(90deg, #eee, #ddd, #eee);
+    border-radius: 5px;
+    animation: shimmer 1.5s infinite;
+}
+
+.line-1 {
+    width: 80%;
+}
+
+.line-2 {
+    width: 60%;
+}
+
+.line-3 {
+    width: 70%;
+}
+
+.line-4 {
+    width: 50%;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -100px 0;
+    }
+
+    100% {
+        background-position: 100px 0;
+    }
+}
+
+.card-info {
+    padding: 15px;
+}
+
+.card-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+.card-competition {
+    margin-top: 5px;
+    font-size: 14px;
+    color: #666;
+}
