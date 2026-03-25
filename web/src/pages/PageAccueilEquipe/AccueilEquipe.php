@@ -32,57 +32,5 @@
 
     </body>
 
-    <style>
-        body {
-            background-color: white;
-        }
-
-        .filters {
-            display: flex;
-            gap: 10px;
-            margin: 20px 0;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .search-bar {
-            padding: 8px 12px;
-            border-radius: 5px;
-            border: 2px solid #1b265c;
-            outline: none;
-        }
-
-        .filter-btn {
-            padding: 8px 14px;
-            margin: 20px 0;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #1b265c;
-            color: white;
-            transition: 0.2s;
-        }
-
-        .filter-btn:hover {
-            opacity: 0.8;
-        }
-
-        .filter-blue {
-            background-color: #1e3a8a;
-        }
-
-        .filter-green {
-            background-color: #16a34a;
-        }
-
-        .teams {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 40px;
-        }
-    </style>
-
 </html>
 

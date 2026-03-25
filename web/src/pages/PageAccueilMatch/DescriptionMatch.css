@@ -1,115 +1,112 @@
-        body {
-            background-color: white;
-        }
+body {
+    background-color: white;
+}
 
-        .match-details {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 40px;
-        }
+.match-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 40px;
+}
 
-        .match-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+.match-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #1b265c;
+    padding: 20px 40px;
+    border-radius: 12px;
+    border: 2px solid #1e3a8a;
+    width: 60%;
+    max-width: 900px;
+    margin: 20px auto;
+}
 
-            background-color: #1b265c;
-            padding: 20px 40px;
-            border-radius: 12px;
-            border: 2px solid #1e3a8a;
+.match-header .team {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
 
-            width: 60%;
-            max-width: 900px;
-            margin: 20px auto;
-        }
+.match-header img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+}
 
-        .match-header .team {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+.score-center {
+    flex: 1;
+    text-align: center;
+}
 
-        .match-header img {
-            width: 60px;
-            height: 60px;
-            object-fit: contain;
-        }
+.match-header .team {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
 
-        .score-center {
-            flex: 1;
-            text-align: center;
-        }
+.match-header .team:first-child {
+    justify-content: flex-start;
+}
 
-        .match-header .team {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex: 1;
-        }
+.match-header .team:last-child {
+    justify-content: flex-end;
+    text-align: right;
+}
 
-        .match-header .team:first-child {
-            justify-content: flex-start;
-        }
+.score-center h1 {
+    font-size: 32px;
+    margin: 0;
+}
 
-        .match-header .team:last-child {
-            justify-content: flex-end;
-            text-align: right;
-        }
+.maps {
+    width: 60%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: auto;
+}
 
-        .score-center h1 {
-            font-size: 32px;
-            margin: 0;
-        }
+.map {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #1b265c;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid #1e3a8a;
+}
 
-        .maps {
-            width: 60%;
-            max-width: 900px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin: auto;
-        }
+.score-left,
+.score-right {
+    width: 50px;
+    text-align: center;
+    font-weight: bold;
+}
 
-        .map {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+.map-name {
+    flex: 1;
+    text-align: center;
+}
 
-            background-color: #1b265c;
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: 1px solid #1e3a8a;
-        }
+.map:hover {
+    border-color: #fca311;
+}
 
-        .score-left,
-        .score-right {
-            width: 50px;
-            text-align: center;
-            font-weight: bold;
-        }
+.back-btn {
+    display: inline-block;
+    margin: 20px;
+    padding: 8px 14px;
+    background-color: #1b265c;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: 0.2s;
+}
 
-        .map-name {
-            flex: 1;
-            text-align: center;
-        }
-
-        .map:hover {
-            border-color: #fca311;
-        }
-
-        .back-btn {
-            display: inline-block;
-            margin: 20px;
-            padding: 8px 14px;
-            background-color: #1b265c;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: 0.2s;
-        }
-
-        .back-btn:hover {
-            background-color: #fca311;
-            color: black;
-        }
+.back-btn:hover {
+    background-color: #fca311;
+    color: black;
+}

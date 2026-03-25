@@ -1,34 +1,34 @@
-       body {
-           background-color: white;
-       }
+body {
+    background-color: white;
+}
 
-       .filters {
-           display: flex;
-           gap: 10px;
-           margin: 20px 0;
-           flex-wrap: wrap;
-           justify-content: center;
-       }
+.filters {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+}
 
-       .filter-btn {
-           padding: 8px 14px;
-           border: 2px solid black;
-           border-radius: 5px;
-           cursor: pointer;
-           background-color: #1b265c;
-           color: white;
-           transition: 0.2s;
-           margin: 20px 0 20px 0;
-       }
+.filter-btn {
+    padding: 8px 14px;
+    border: 2px solid black;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #1b265c;
+    color: white;
+    transition: 0.2s;
+    margin: 20px 0 20px 0;
+}
 
-       .filter-btn:hover {
-           opacity: 0.8;
-       }
+.filter-btn:hover {
+    opacity: 0.8;
+}
 
-       .filter-blue {
-           background-color: #1e3a8a;
-       }
+.filter-blue {
+    background-color: #1e3a8a;
+}
 
-       .filter-green {
-           background-color: #16a34a;
-       }
+.filter-green {
+    background-color: #16a34a;
+}

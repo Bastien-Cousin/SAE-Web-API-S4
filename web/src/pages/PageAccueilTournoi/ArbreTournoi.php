@@ -1,27 +1,24 @@
 <!DOCTYPE html>
 <html lang="fr">
 
-<head>
-    <meta charset="UTF-8">
-    <title>Arbre Tournoi</title>
-    <link rel="stylesheet" href="../style.css">
-</head>
-<?php include '../components/navbar.php'; ?>
+    <head>
+        <meta charset="UTF-8">
+        <title>Arbre Tournoi</title>
+        <link rel="stylesheet" href="../style.css">
+        <link rel="stylesheet" href="../components/componentArbre/bracket.css">
+    </head>
 
-<body>
+    <body><?php include '../components/navbar.php'; ?>
 
-    <?php
-    require '../components/arbre.php'; // le composant bracket
-    ?>
+        <?php
+        require '../components/componentArbre/arbre.php';
 
-    <?php
-    $rounds = [ /* ... */];
-    $thirdPlace = [ /* ... */];
+        $rounds = [ /* ... */];
+        $thirdPlace = [ /* ... */];
 
-    bracketStyles();
-    ?>
+        renderBracket('Nom du tournoi', $rounds, $thirdPlace);
+        ?>
 
-
-</body>
+    </body>
 
 </html>
