@@ -318,29 +318,16 @@ async function updateMatches(): Promise<void> {
     }
 }
 
-// Boucle infinie pour exécuter la mise à jour une fois par heure
+// Fonction principale pour exécuter la mise à jour une seule fois
 async function main(): Promise<void> {
-    console.log('\n🔁 Démarrage de la boucle de vérification...');
-    console.log('   Exécution toutes les heures\n');
-
-    let iteration = 0;
-
-    while (true) {
-        iteration++;
-        const now = new Date();
-
-        console.log(`[ITÉRATION ${iteration}] ⏰ ${now.toLocaleString()}`);
-
-        try {
-            await updateMatches();
-        } catch (error: any) {
-            console.error(`❌ Erreur lors de l'exécution: ${error.message}`);
-        }
-
-        console.log(`   ⏳ Attente 1 heure avant prochaine vérification...\n`);
-
-        // Attendre 1 heure avant de vérifier à nouveau
-        await sleep(3600000); // 3600000 millisecondes = 1 heure
+    try {
+        await updateMatches();
+        await pool.end();
+        process.exit(0);
+    } catch (error: any) {
+        console.error(`❌ Erreur lors de l'exécution: ${error.message}`);
+        await pool.end();
+        process.exit(1);
     }
 }
 

@@ -256,35 +256,26 @@ async function updatePlayers(): Promise<boolean> {
     }
 }
 
-// Boucle infinie pour exécuter la mise à jour continuellement
+// Fonction principale pour exécuter la mise à jour une seule fois
 async function main() {
-    console.log("\n🔁 Démarrage de la boucle de vérification...");
-    console.log("   Exécution continue toutes les 24 heures\n");
+    console.log("\n📥 Démarrage de l'importation des joueurs...\n");
 
-    let iteration = 0;
-
-    while (true) {
-        iteration++;
-        const now = new Date();
-
-        console.log(`[ITÉRATION ${iteration}] ⏰ ${now.toLocaleString()}`);
-
-        console.log("   ✅ Exécution de updatePlayers()...");
-        try {
-            const result = await updatePlayers();
-            if (result) {
-                console.log("   ✅ Mise à jour réussie!");
-            } else {
-                console.log("   ⚠️ Mise à jour échouée!");
-            }
-        } catch (e: any) {
-            console.error(`   ❌ Erreur lors de l'exécution: ${e.message}`);
+    console.log("   ✅ Exécution de updatePlayers()...");
+    try {
+        const result = await updatePlayers();
+        if (result) {
+            console.log("   ✅ Mise à jour réussie!");
+            await pool.end();
+            process.exit(0);
+        } else {
+            console.log("   ⚠️ Mise à jour échouée!");
+            await pool.end();
+            process.exit(1);
         }
-
-        console.log(`   ⏳ Attente 24 heures avant prochaine vérification...\n`);
-
-        // Attendre 24 heures avant de vérifier à nouveau
-        await sleep(86400000); // 86400000 millisecondes = 1 jour
+    } catch (e: any) {
+        console.error(`   ❌ Erreur lors de l'exécution: ${e.message}`);
+        await pool.end();
+        process.exit(1);
     }
 }
 

@@ -245,28 +245,16 @@ async function updateTeams(): Promise<void> {
     }
 }
 
-// Boucle infinie pour exécuter la mise à jour une fois par mois
+// Fonction principale pour exécuter la mise à jour une seule fois
 async function main(): Promise<void> {
-    console.log('\n🔁 Démarrage de la boucle de vérification...');
-    console.log('   Exécution toutes les 24 heures\n');
-
-    let iteration: number = 0;
-
-    while (true) {
-        iteration++;
-        const now = new Date();
-        console.log(`[ITÉRATION ${iteration}] ⏰ ${now.toLocaleString()}`);
-
-        try {
-            await updateTeams();
-        } catch (error: any) {
-            console.error(`   ❌ Erreur lors de l'exécution: ${error.message}`);
-        }
-
-        console.log('   ⏳ Attente 24 heures avant prochaine vérification...\n');
-
-        // Attendre 24 heures
-        await sleep(86400000); // 24 heures en ms
+    try {
+        await updateTeams();
+        await pool.end();
+        process.exit(0);
+    } catch (error: any) {
+        console.error(`   ❌ Erreur lors de l'exécution: ${error.message}`);
+        await pool.end();
+        process.exit(1);
     }
 }
 
