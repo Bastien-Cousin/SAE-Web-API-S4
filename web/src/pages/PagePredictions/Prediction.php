@@ -123,7 +123,7 @@
             <div class="pred-scores">
                 <div class="pred-score">12–6</div>
             </div>
-            <div class="pred-logos">log1 log2 </div>
+            <div class="pred-logos">log1 <log2></log2> </div>
             <div class="real-label">Réalité</div>
             <div class="real-scores">
                 <div class="real-score">8–12</div>
