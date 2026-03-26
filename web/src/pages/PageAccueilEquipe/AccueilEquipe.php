@@ -21,20 +21,49 @@
 
         <?php include __DIR__ . '/../../components/ComponentCardTeam/cardTeam.php'; ?>
 
-            <div class="filters"> <input type="text" placeholder="Rechercher une équipe..." class="search-bar">
+            <form method="GET" class="filters"> <input type="text" name="search" placeholder="Rechercher une équipe..." class="search-bar" value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
 
-            <button class="filter-btn">Pays</button>
-            <button class="filter-btn filter-blue">Filtrer</button>
-            <button class="filter-btn filter-green">Rechercher</button>
-        </div>
+            <select name="country" class="filter-btn">
+                <option value="">Tous les pays</option>
+                <option value="fr" <?= (($_GET['country'] ?? '') === 'fr') ? 'selected' : '' ?>>France</option>
+                <option value="eu" <?= (($_GET['country'] ?? '') === 'eu') ? 'selected' : '' ?>>Europe</option>
+                <option value="ru" <?= (($_GET['country'] ?? '') === 'ru') ? 'selected' : '' ?>>Russie</option>
+            </select>
+
+            <button type="submit" class="filter-btn filter-blue">Filtrer</button>
+
+            <button class="filter-btn filter-green" type="submit">Rechercher</button>
+        </form>
 
         <div
             class="teams"><?php
 
-            renderTeamCard("/img/LogosEquipes/vitality.png", "Team Vitality", "vitality");
-            renderTeamCard("/img/LogosEquipes/faze.png", "FaZe", "faze");
-            renderTeamCard("/img/LogosEquipes/mouz.png", "Mouz", "mouz");
-            renderTeamCard("/img/LogosEquipes/spirit.png", "Team Spirit", "spirit");
+            $search = $_GET['search'] ?? '';
+            $country = $_GET['country'] ?? '';
+
+            $teams = [
+                ["img" => "/img/LogosEquipes/vitality.png", "name" => "Team Vitality", "slug" => "vitality", "country" => "fr"],
+                ["img" => "/img/LogosEquipes/faze.png", "name" => "FaZe", "slug" => "faze", "country" => "eu"],
+                ["img" => "/img/LogosEquipes/mouz.png", "name" => "Mouz", "slug" => "mouz", "country" => "eu"],
+                ["img" => "/img/LogosEquipes/spirit.png", "name" => "Team Spirit", "slug" => "spirit", "country" => "ru"],
+            ];
+
+            $found = false;
+
+            foreach ($teams as $team) {
+
+                $matchSearch = ($search === '' || stripos($team['name'], $search) !== false);
+                $matchCountry = ($country === '' || $team['country'] === $country);
+
+                if ($matchSearch && $matchCountry) {
+                    renderTeamCard($team['img'], $team['name'], $team['slug']);
+                    $found = true;
+                }
+            }
+
+            if (!$found) {
+                echo "<p>Aucune équipe trouvée.</p>";
+            }
 
             ?>
         </div>

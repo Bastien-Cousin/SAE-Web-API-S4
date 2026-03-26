@@ -101,6 +101,10 @@ $joueursEquipe = array_filter($joueurs, function ($joueur) use ($teamKey) {
 
         <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
 
+        <div class="top-bar">
+            <a href="AccueilEquipe.php" class="back-btn">← Retour aux équipes</a>
+        </div>
+
         <div class="team-header">
             <div class="team-left">
                 <img src="<?php echo $equipe['logo']; ?>" class="team-logo">
