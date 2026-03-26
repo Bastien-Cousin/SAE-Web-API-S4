@@ -163,3 +163,50 @@ model matchplayer {
     @@index([player_id])
     @@map("matchplayer")
 }
+
+// Modèle tournaments (Tournois)
+model tournament {
+    pageid             BigInt    @id
+    pagename           String?
+    namespace          Int?
+    objectname         String    @unique
+    name               String?
+    shortname          String?
+    tickername         String?
+    banner             String?
+    bannerurl          String?
+    bannerdark         String?
+    bannerdarkurl      String?
+    icon               String?
+    iconurl            String?
+    icondark           String?
+    icondarkurl        String?
+    seriespage         String?
+    serieslist         Json?
+    previous           String?
+    previous2          String?
+    next               String?
+    next2              String?
+    game               String?
+    mode               String?
+    patch              String?
+    endpatch           String?
+    type               String?
+    organizers         String?
+    startdate          DateTime? @db.Date
+    enddate            DateTime? @db.Date
+    sortdate           DateTime? @db.Date
+    locations          Json?
+    prizepool          BigInt?
+    participantsnumber Int?
+    liquipediatier     String?
+    liquipediatiertype String?
+    publishertier      String?
+    status             String?
+    maps               String?
+    format             String?
+    sponsors           String?
+    extradata          Json?
+
+    @@map("tournament")
+}
