@@ -7,13 +7,12 @@
 body {
     font-family: Arial, sans-serif;
     background: #f5f7fa;
-    padding: 30px;
     color: #333;
 }
 
 h1 {
     text-align: center;
-    margin-bottom: 30px;
+    margin: 30px 0 30px 0;
     font-size: 28px;
 }
 
