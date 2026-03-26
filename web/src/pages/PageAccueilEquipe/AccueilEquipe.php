@@ -12,12 +12,21 @@ try {
     die("❌ Erreur de connexion à la base de données : " . $e->getMessage());
 }
 
+// ===============================
+// Récupération des filtres
+// ===============================
 $search = $_GET['search'] ?? '';
 $country = $_GET['country'] ?? '';
 
+// ===============================
+// Récupérer toutes les régions pour le select
+// ===============================
 $stmtRegions = $pdo->query("SELECT DISTINCT region FROM team ORDER BY region ASC");
 $regions = $stmtRegions->fetchAll(PDO::FETCH_COLUMN);
 
+// ===============================
+// Requête principale pour récupérer les équipes
+// ===============================
 $sql = "SELECT pageid, name, logo, logourl, textlesslogourl, objectname, region 
         FROM team 
         WHERE 1=1";
@@ -40,6 +49,9 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// ===============================
+// Fonction pour afficher une carte d'équipe
+// ===============================
 function renderTeamCard($team)
 {
     $logo = $team['textlesslogourl'] ?? $team['logourl'] ?? '';
@@ -74,7 +86,7 @@ function renderTeamCard($team)
     </head>
     <body>
 
-        <?php include __DIR__ . '/../../components/ComponentCardTeam/cardTeam.php'; ?>
+        <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
 
         <form method="GET" class="filters">
             <input type="text" name="search" placeholder="Rechercher une équipe..." class="search-bar" value="<?= htmlspecialchars($search) ?>">
@@ -105,4 +117,5 @@ function renderTeamCard($team)
         </div>
 
     </body>
-</html></html>
+</html>
+
