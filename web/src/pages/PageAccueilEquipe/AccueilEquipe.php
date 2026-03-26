@@ -12,21 +12,13 @@ try {
     die("❌ Erreur de connexion à la base de données : " . $e->getMessage());
 }
 
-// ===============================
-// Récupération des filtres
-// ===============================
 $search = $_GET['search'] ?? '';
 $country = $_GET['country'] ?? '';
+$sort = $_GET['sort'] ?? 'name_asc';
 
-// ===============================
-// Récupérer toutes les régions pour le select
-// ===============================
 $stmtRegions = $pdo->query("SELECT DISTINCT region FROM team ORDER BY region ASC");
 $regions = $stmtRegions->fetchAll(PDO::FETCH_COLUMN);
 
-// ===============================
-// Requête principale pour récupérer les équipes
-// ===============================
 $sql = "SELECT pageid, name, logo, logourl, textlesslogourl, objectname, region 
         FROM team 
         WHERE 1=1";
@@ -43,15 +35,21 @@ if ($country !== '') {
     $params[':country'] = $country;
 }
 
-$sql .= " ORDER BY name ASC";
-
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// ===============================
-// Fonction pour afficher une carte d'équipe
-// ===============================
+usort($teams, function ($a, $b) use ($sort) {
+    switch ($sort) {
+        case 'name_asc':
+            return strcasecmp($a['name'], $b['name']);
+        case 'name_desc':
+            return strcasecmp($b['name'], $a['name']);
+        default:
+            return strcasecmp($a['name'], $b['name']);
+    }
+});
+
 function renderTeamCard($team)
 {
     $logo = $team['textlesslogourl'] ?? $team['logourl'] ?? '';
@@ -100,8 +98,12 @@ function renderTeamCard($team)
                 <?php endforeach; ?>
             </select>
 
-            <button type="submit" class="filter-btn filter-blue">Filtrer</button>
-            <button type="submit" class="filter-btn filter-green">Rechercher</button>
+            <select name="sort" class="filter-btn">
+                <option value="name_asc" <?= $sort === 'name_asc' ? 'selected' : '' ?>>Nom A → Z</option>
+                <option value="name_desc" <?= $sort === 'name_desc' ? 'selected' : '' ?>>Nom Z → A</option>
+            </select>
+
+            <button type="submit" class="filter-btn filter-blue">Appliquer</button>
         </form>
 
         <div

@@ -1,20 +1,34 @@
-<?php include __DIR__ . '/../../components/ComponentCardPlayer/cardPlayer.php';
+<?php
+include __DIR__ . '/../../components/ComponentCardPlayer/cardPlayer.php';
+
+// Connexion à la base
 $host = getenv('POSTGRES_HOST') ?: 'db';
 $port = getenv('POSTGRES_PORT') ?: '5432';
 $dbname = getenv('POSTGRES_DB') ?: 'sae_db';
 $user = getenv('POSTGRES_USER') ?: 'sae_user';
 $password = getenv('POSTGRES_PASSWORD') ?: 'sae_password';
+
 try {
     $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die("❌ Erreur de connexion à la base de données : " . $e->getMessage());
 }
+
+// Récupération des filtres
 $search = $_GET['search'] ?? '';
 $region = $_GET['region'] ?? '';
+$sort = $_GET['sort'] ?? 'pseudo_asc';
+
+// Toutes les régions pour le select
 $stmtRegions = $pdo->query("SELECT DISTINCT region FROM player ORDER BY region ASC");
 $regions = $stmtRegions->fetchAll(PDO::FETCH_COLUMN);
-$sql = "SELECT pageid, objectname, name, birthdate, status, type, earnings, nationality, region FROM player WHERE 1=1";
+
+// Requête principale
+$sql = "SELECT pageid, objectname, name, birthdate, status, type, earnings, nationality, region
+        FROM player
+        WHERE 1=1";
+
 $params = [];
 if ($search !== '') {
     $sql .= " AND (name ILIKE :search OR objectname ILIKE :search)";
@@ -24,15 +38,58 @@ if ($region !== '') {
     $sql .= " AND region = :region";
     $params[':region'] = $region;
 }
-$sql .= " ORDER BY name ASC";
+
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $playersData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$joueurs = array_map(function ($player) {
+
+// Ajouter pseudo nettoyé
+foreach ($playersData as &$player) {
     $pseudo = $player['objectname'] ?? 'N/A';
     if (strpos($pseudo, '_') !== false) {
         $parts = explode('_', $pseudo);
-        $pseudo = end($parts); }return ['pays' => $player['nationality'] ?? 'N/A', 'pseudo' => $pseudo, 'nom_prenom' => $player['name'] ?? 'N/A', 'age' => $player['birthdate'] ? date('Y') - date('Y', strtotime($player['birthdate'])) : 'N/A', 'statut' => $player['status'] ?? 'Actif', 'role' => $player['type'] ?? 'N/A', 'argent_gagne' => isset($player['earnings']) ? number_format($player['earnings']) . ' €' : 'N/A', 'logo' => '', 'couleur_logo' => '#cccccc',]; }, $playersData); ?>
+        $player['pseudo'] = end($parts);
+    } else {
+        $player['pseudo'] = $pseudo;
+    }
+}
+unset($player); // bonne pratique
+
+// Trier selon le paramètre sort
+usort($playersData, function ($a, $b) use ($sort) {
+    switch ($sort) {
+        case 'pseudo_asc':
+            return strcasecmp($a['pseudo'], $b['pseudo']);
+        case 'pseudo_desc':
+            return strcasecmp($b['pseudo'], $a['pseudo']);
+        case 'age_asc':
+            return strtotime($a['birthdate'] ?? 'now') <=> strtotime($b['birthdate'] ?? 'now');
+        case 'age_desc':
+            return strtotime($b['birthdate'] ?? 'now') <=> strtotime($a['birthdate'] ?? 'now');
+        case 'earnings_asc':
+            return ($a['earnings'] ?? 0) <=> ($b['earnings'] ?? 0);
+        case 'earnings_desc':
+            return ($b['earnings'] ?? 0) <=> ($a['earnings'] ?? 0);
+        default:
+            return strcasecmp($a['pseudo'], $b['pseudo']);
+    }
+});
+
+// Mapper pour l'affichage
+$joueurs = array_map(function ($player) {
+    return [
+        'pays' => $player['nationality'] ?? 'N/A',
+        'pseudo' => $player['pseudo'] ?? 'N/A',
+        'nom_prenom' => $player['name'] ?? 'N/A',
+        'age' => $player['birthdate'] ? date('Y') - date('Y', strtotime($player['birthdate'])) : 'N/A',
+        'statut' => $player['status'] ?? 'Actif',
+        'role' => $player['type'] ?? 'N/A',
+        'argent_gagne' => isset($player['earnings']) ? number_format($player['earnings']) . ' €' : 'N/A',
+        'logo' => '',
+        'couleur_logo' => '#cccccc',
+    ];
+}, $playersData);
+?>
 <!DOCTYPE html>
 <html lang="fr">
     <head>
@@ -44,12 +101,16 @@ $joueurs = array_map(function ($player) {
         <link rel="stylesheet" href="../../components/ComponentCardPlayer/cardPlayer.css">
     </head>
     <body>
+
         <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
+
         <div class="page-header">
             <h1>Joueurs</h1>
         </div>
+
         <form method="GET" class="filters">
             <input type="text" name="search" placeholder="Rechercher un joueur..." class="search-bar" value="<?= htmlspecialchars($search) ?>">
+
             <select name="region" class="filter-btn">
                 <option value="">Toutes les régions / zones</option>
                 <?php foreach ($regions as $regionOption): ?>
@@ -58,9 +119,19 @@ $joueurs = array_map(function ($player) {
                     </option>
                 <?php endforeach; ?>
             </select>
-            <button type="submit" class="filter-btn filter-blue">Filtrer</button>
-            <button type="submit" class="filter-btn filter-green">Rechercher</button>
+
+            <select name="sort" class="filter-btn">
+                <option value="pseudo_asc" <?= $sort === 'pseudo_asc' ? 'selected' : '' ?>>Pseudo A → Z</option>
+                <option value="pseudo_desc" <?= $sort === 'pseudo_desc' ? 'selected' : '' ?>>Pseudo Z → A</option>
+                <option value="age_asc" <?= $sort === 'age_asc' ? 'selected' : '' ?>>Âge ↑ (plus vieux)</option>
+                <option value="age_desc" <?= $sort === 'age_desc' ? 'selected' : '' ?>>Âge ↓ (plus jeune)</option>
+                <option value="earnings_asc" <?= $sort === 'earnings_asc' ? 'selected' : '' ?>>Gains ↑</option>
+                <option value="earnings_desc" <?= $sort === 'earnings_desc' ? 'selected' : '' ?>>Gains ↓</option>
+            </select>
+
+            <button type="submit" class="filter-btn filter-blue">Appliquer</button>
         </form>
+
         <div
             class="cards-grid">
             <?php if (empty($joueurs)): ?>
@@ -71,5 +142,6 @@ $joueurs = array_map(function ($player) {
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
+
     </body>
 </html>
