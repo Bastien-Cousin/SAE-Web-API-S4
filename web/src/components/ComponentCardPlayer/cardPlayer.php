@@ -13,25 +13,24 @@ function afficherCarteJoueur(array $joueur): void
     ?>
     <div class="player-card" style="--card-color: <?= $couleur ?>;">
 
-        <div
-            class="card-logo">
+        <div class="card-logo">
             <?php if (!empty($logo)): ?>
-                <img
-                src="<?= $logo ?>" alt="Logo équipe">
+                <img src="<?= $logo ?>" alt="Logo équipe">
             <?php else: ?>
                 <div class="logo-placeholder">?</div>
             <?php endif; ?>
         </div>
         <div class="card-info">
             <p class="info-pays">
-                <img src="https://flagcdn.com/24x18/<?= strtolower($pays) ?>.png" alt="Drapeau <?= $pays ?>" title="<?= $pays ?>" onerror="this.style.display='none'">
+                <img src="https://flagcdn.com/24x18/<?= strtolower($pays) ?>.png" alt="Drapeau <?= $pays ?>"
+                    title="<?= $pays ?>" onerror="this.style.display='none'">
             </p>
             <p class="info-pseudo"><?= $pseudo ?></p>
             <p class="info-nom"><?= $nom_prenom ?></p>
-            <p
-                class="info-age">
+            <p class="info-age">
                 <?= $age ?>
-                ans</p>
+                ans
+            </p>
             <div class="info-row">
                 <span class="info-statut"><?= $statut ?></span>
                 <span class="info-role"><?= $role ?></span>
@@ -39,7 +38,7 @@ function afficherCarteJoueur(array $joueur): void
             <p class="info-argent"><?= $argent ?></p>
         </div>
 
-    </div><?php
+    </div>
+    <?php
 }
 ?>
-
