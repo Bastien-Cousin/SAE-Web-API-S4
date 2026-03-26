@@ -16,8 +16,8 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: var(--clr-bg);
-    color: var(--clr-text);
+    background: var(--clr-white);
+    color: black;
 }
 
 .main-content {
@@ -29,7 +29,7 @@ h1 {
     margin-bottom: 48px;
     font-size: 2.5rem;
     font-weight: 900;
-    color: var(--clr-white);
+    color: black;
     text-transform: uppercase;
     text-decoration: underline;
     text-decoration-color: var(--clr-accent);
