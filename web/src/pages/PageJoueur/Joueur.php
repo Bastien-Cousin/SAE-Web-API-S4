@@ -16,6 +16,7 @@ try {
 
 $search = $_GET['search'] ?? '';
 $region = $_GET['region'] ?? '';
+$sort = $_GET['sort'] ?? 'pseudo_asc';
 
 $limit = 50;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -54,17 +55,44 @@ $stmt->execute();
 
 $playersData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$joueurs = array_map(function ($player) {
+// Ajouter pseudo nettoyé
+foreach ($playersData as &$player) {
     $pseudo = $player['objectname'] ?? 'N/A';
 
     if (strpos($pseudo, '_') !== false) {
         $parts = explode('_', $pseudo);
-        $pseudo = end($parts);
+        $player['pseudo'] = end($parts);
+    } else {
+        $player['pseudo'] = $pseudo;
     }
+}
+unset($player); // bonne pratique
 
+// Trier selon le paramètre sort
+usort($playersData, function ($a, $b) use ($sort) {
+    switch ($sort) {
+        case 'pseudo_asc':
+            return strcasecmp($a['pseudo'], $b['pseudo']);
+        case 'pseudo_desc':
+            return strcasecmp($b['pseudo'], $a['pseudo']);
+        case 'age_asc':
+            return strtotime($a['birthdate'] ?? 'now') <=> strtotime($b['birthdate'] ?? 'now');
+        case 'age_desc':
+            return strtotime($b['birthdate'] ?? 'now') <=> strtotime($a['birthdate'] ?? 'now');
+        case 'earnings_asc':
+            return ($a['earnings'] ?? 0) <=> ($b['earnings'] ?? 0);
+        case 'earnings_desc':
+            return ($b['earnings'] ?? 0) <=> ($a['earnings'] ?? 0);
+        default:
+            return strcasecmp($a['pseudo'], $b['pseudo']);
+    }
+});
+
+// Mapper pour l'affichage
+$joueurs = array_map(function ($player) {
     return [
         'pays' => $player['nationality'] ?? 'N/A',
-        'pseudo' => $pseudo,
+        'pseudo' => $player['pseudo'] ?? 'N/A',
         'nom_prenom' => $player['name'] ?? 'N/A',
         'age' => $player['birthdate'] ? date('Y') - date('Y', strtotime($player['birthdate'])) : 'N/A',
         'statut' => $player['status'] ?? 'Actif',
@@ -75,47 +103,58 @@ $joueurs = array_map(function ($player) {
     ];
 }, $playersData);
 ?>
-
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Joueurs</title>
+    <head>
+        <meta charset="UTF-8">
+        <title>Joueurs</title>
+        <link rel="stylesheet" href="../../style.css">
+        <link rel="stylesheet" href="Joueur.css">
+        <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
+        <link rel="stylesheet" href="../../components/ComponentCardPlayer/cardPlayer.css">
+    </head>
+    <body>
 
-    <link rel="stylesheet" href="../../style.css">
-    <link rel="stylesheet" href="Joueur.css">
-    <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
-    <link rel="stylesheet" href="../../components/ComponentCardPlayer/cardPlayer.css">
-</head>
+        <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
 
-<body>
+        <div class="page-header">
+            <h1>Joueurs</h1>
+        </div>
 
-<?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
+        <form method="GET" class="filters">
+            <input type="text" name="search" placeholder="Rechercher un joueur..." class="search-bar" value="<?= htmlspecialchars($search) ?>">
 
-<div class="page-header">
-    <h1>Joueurs</h1>
-</div>
+            <select name="region" class="filter-btn">
+                <option value="">Toutes les régions / zones</option>
+                <?php foreach ($regions as $regionOption): ?>
+                    <option
+                        value="<?= htmlspecialchars($regionOption) ?>" <?= ($region === $regionOption) ? 'selected' : '' ?>><?= htmlspecialchars(strtoupper($regionOption)) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
 
-<form method="GET" class="filters">
-    <input type="text" name="search" placeholder="Rechercher..." value="<?= htmlspecialchars($search) ?>">
-    
-    <select name="region">
-        <option value="">Toutes les régions</option>
-        <?php foreach ($regions as $regionOption): ?>
-            <option value="<?= htmlspecialchars($regionOption) ?>" <?= ($region === $regionOption) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($regionOption) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
+            <select name="sort" class="filter-btn">
+                <option value="pseudo_asc" <?= $sort === 'pseudo_asc' ? 'selected' : '' ?>>Pseudo A → Z</option>
+                <option value="pseudo_desc" <?= $sort === 'pseudo_desc' ? 'selected' : '' ?>>Pseudo Z → A</option>
+                <option value="age_asc" <?= $sort === 'age_asc' ? 'selected' : '' ?>>Âge ↑ (plus vieux)</option>
+                <option value="age_desc" <?= $sort === 'age_desc' ? 'selected' : '' ?>>Âge ↓ (plus jeune)</option>
+                <option value="earnings_asc" <?= $sort === 'earnings_asc' ? 'selected' : '' ?>>Gains ↑</option>
+                <option value="earnings_desc" <?= $sort === 'earnings_desc' ? 'selected' : '' ?>>Gains ↓</option>
+            </select>
 
-    <button type="submit">Filtrer</button>
-</form>
+            <button type="submit" class="filter-btn filter-blue">Appliquer</button>
+        </form>
 
-<div class="cards-grid" id="cards-container">
-    <?php foreach ($joueurs as $joueur): ?>
-        <?php afficherCarteJoueur($joueur); ?>
-    <?php endforeach; ?>
-</div>
+        <div
+            class="cards-grid" id="cards-container">
+            <?php if (empty($joueurs)): ?>
+                <p>Aucun joueur trouvé.</p>
+            <?php else: ?>
+            <?php foreach ($joueurs as $joueur): ?>
+                    <?php afficherCarteJoueur($joueur); ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
 
 <script>
 let page = 1;
@@ -167,6 +206,5 @@ window.addEventListener('scroll', onScroll);
 window.addEventListener('scroll', animateCards);
 window.addEventListener('load', animateCards);
 </script>
-
-</body>
+    </body>
 </html>
