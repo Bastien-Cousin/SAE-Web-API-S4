@@ -17,7 +17,10 @@ require_once '../../components/ComponentCardMaps/cardMaps.php';
     <?php include '../../components/ComponentNavbar/navbar.php'; ?>
 
     <div class="main-content">
-        <h1>Maps CS2</h1>
+        <div class="header-section">
+            <h1>Maps CS2</h1>
+            <a href="FormulaireMap.php" class="btn-add-map">+ Nouvelle Map</a>
+        </div>
 
         <div class="container">
             <?php echo createMapCard(

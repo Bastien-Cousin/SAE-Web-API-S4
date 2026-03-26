@@ -74,7 +74,7 @@ function renderTeamCard($team)
     </head>
     <body>
 
-        <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
+        <?php include __DIR__ . '/../../components/ComponentCardTeam/cardTeam.php'; ?>
 
         <form method="GET" class="filters">
             <input type="text" name="search" placeholder="Rechercher une équipe..." class="search-bar" value="<?= htmlspecialchars($search) ?>">
@@ -105,5 +105,4 @@ function renderTeamCard($team)
         </div>
 
     </body>
-</html>
-
+</html></html>

@@ -72,11 +72,12 @@ $joueurs = array_map(function ($player) {
     </head>
     <body>
 
-        <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
+    <?php include __DIR__ . '/../../components/ComponentCardPlayer/cardPlayer.php'; ?>
 
         <div class="page-header">
             <h1>Joueurs</h1>
         </div>
+    </div>
 
         <form method="GET" class="filters">
             <input type="text" name="search" placeholder="Rechercher un joueur..." class="search-bar" value="<?= htmlspecialchars($search) ?>">
@@ -108,3 +109,4 @@ $joueurs = array_map(function ($player) {
     </body>
 </html>
 
+</html>
