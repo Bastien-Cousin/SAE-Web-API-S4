@@ -4,6 +4,7 @@ import { prisma } from './client.js'
 import teamsRouter from './routes/teams.js'
 import playersRouter from './routes/players.js'
 import matchesRouter from './routes/matches.js'
+import { authRouter } from './auth.route.js'
 
 const app = express()
 app.use(express.json())
@@ -28,6 +29,9 @@ app.get('/api/health', async (_req: Request, res: Response) => {
     })
   }
 })
+
+// Router d'authentification
+app.use(authRouter);
 
 // Routes API
 app.use('/api/teams', teamsRouter)
