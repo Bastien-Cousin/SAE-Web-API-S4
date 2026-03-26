@@ -27,7 +27,7 @@ html {
 }
 
 body {
-    background: var(--clr-bg);
+    background: var(--clr-white);
     color: var(--clr-text);
     font-family: var(--font-body);
     line-height: 1.6;
