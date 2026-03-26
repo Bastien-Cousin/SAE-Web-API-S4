@@ -9,7 +9,7 @@ require_once '../../components/ComponentCardMaps/cardMaps.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ma Page avec les Cartes</title>
     <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
-    <link rel="stylesheet" href="cardMaps.css">
+    <link rel="stylesheet" href="../../components/ComponentCardMaps/cardMaps.css">
     <link rel="stylesheet" href="Map.css">
 </head>
 
@@ -17,16 +17,65 @@ require_once '../../components/ComponentCardMaps/cardMaps.php';
     <?php include '../../components/ComponentNavbar/navbar.php'; ?>
 
     <div class="main-content">
-        <h1>Liste des Maps</h1>
+        <h1>Maps CS2</h1>
 
         <div class="container">
-            <?php echo createMapCard('Dust II', '2001 - "current"'); ?>
+            <?php echo createMapCard(
+                'Ancient',
+                '2020 - "current"',
+                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+            ); ?>
+            <?php echo createMapCard(
+                'Anubis',
+                '2020 - "current"',
+                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+            ); ?>
+            <?php echo createMapCard(
+                'Dust II',
+                '2001 - "current"',
+                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+            ); ?>
+            <?php echo createMapCard(
+                'Dust II',
+                '2001 - "current"',
+                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+            ); ?>
+            <?php echo createMapCard(
+                'Dust II',
+                '2001 - "current"',
+                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+            ); ?>
+            <?php echo createMapCard(
+                'Dust II',
+                '2001 - "current"',
+                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+            ); ?>
+            <?php echo createMapCard(
+                'Dust II',
+                '2001 - "current"',
+                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+            ); ?>
+            <?php echo createMapCard(
+                'Dust II',
+                '2001 - "current"',
+                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+            ); ?>
+            <?php echo createMapCard(
+                'Dust II',
+                '2001 - "current"',
+                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+            ); ?>
+            <?php echo createMapCard(
+                'Dust II',
+                '2001 - "current"',
+                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+            ); ?>
+            <?php echo createMapCard(
+                'Dust II',
+                '2001 - "current"',
+                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+            ); ?>
 
-            <?php echo createMapCard('Mirage', '2013 - "current"'); ?>
-
-            <?php echo createMapCard('Inferno', '1999 - "current"'); ?>
-
-            <?php echo createMapCard('Nuke', '2000 - "current"'); ?>
         </div>
     </div>
 
