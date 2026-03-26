@@ -1,74 +1,109 @@
+<?php
+$host = getenv('POSTGRES_HOST') ?: 'db';
+$port = getenv('POSTGRES_PORT') ?: '5432';
+$dbname = getenv('POSTGRES_DB') ?: 'sae_db';
+$user = getenv('POSTGRES_USER') ?: 'sae_user';
+$password = getenv('POSTGRES_PASSWORD') ?: 'sae_password';
+
+try {
+    $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("❌ Erreur de connexion à la base de données : " . $e->getMessage());
+}
+
+$search = $_GET['search'] ?? '';
+$country = $_GET['country'] ?? '';
+
+$stmtRegions = $pdo->query("SELECT DISTINCT region FROM team ORDER BY region ASC");
+$regions = $stmtRegions->fetchAll(PDO::FETCH_COLUMN);
+
+$sql = "SELECT pageid, name, logo, logourl, textlesslogourl, objectname, region 
+        FROM team 
+        WHERE 1=1";
+
+$params = [];
+
+if ($search !== '') {
+    $sql .= " AND name ILIKE :search";
+    $params[':search'] = "%$search%";
+}
+
+if ($country !== '') {
+    $sql .= " AND region = :country";
+    $params[':country'] = $country;
+}
+
+$sql .= " ORDER BY name ASC";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+function renderTeamCard($team)
+{
+    $logo = $team['textlesslogourl'] ?? $team['logourl'] ?? '';
+
+    if (empty($logo)) {
+        $logo = "https://via.placeholder.com/100?text=No+Logo";
+    }
+
+    $name = htmlspecialchars($team['name'] ?? 'Unknown');
+    $slug = htmlspecialchars($team['objectname'] ?? '');
+    $logo = htmlspecialchars($logo);
+
+    echo <<<HTML
+    <a href="DescriptionEquipe.php?team=$slug" class="team-card">
+        <img src="$logo" alt="$name">
+        <span>$name</span>
+    </a>
+    HTML;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="fr">
-
     <head>
         <meta charset="UTF-8">
         <title>CS2 - Équipes</title>
-
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 
         <link rel="stylesheet" href="../../style.css">
         <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
         <link rel="stylesheet" href="../../components/ComponentCardTeam/cardTeam.css">
         <link rel="stylesheet" href="AccueilEquipe.css">
     </head>
-
     <body>
 
         <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
 
-        <?php include __DIR__ . '/../../components/ComponentCardTeam/cardTeam.php'; ?>
-
-            <form method="GET" class="filters"> <input type="text" name="search" placeholder="Rechercher une équipe..." class="search-bar" value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
+        <form method="GET" class="filters">
+            <input type="text" name="search" placeholder="Rechercher une équipe..." class="search-bar" value="<?= htmlspecialchars($search) ?>">
 
             <select name="country" class="filter-btn">
-                <option value="">Tous les pays</option>
-                <option value="fr" <?= (($_GET['country'] ?? '') === 'fr') ? 'selected' : '' ?>>France</option>
-                <option value="eu" <?= (($_GET['country'] ?? '') === 'eu') ? 'selected' : '' ?>>Europe</option>
-                <option value="ru" <?= (($_GET['country'] ?? '') === 'ru') ? 'selected' : '' ?>>Russie</option>
+                <option value="">Toutes les régions / zones</option>
+                <?php foreach ($regions as $regionOption): ?>
+                    <option
+                        value="<?= htmlspecialchars($regionOption) ?>" <?= ($country === $regionOption) ? 'selected' : '' ?>><?= htmlspecialchars(strtoupper($regionOption)) ?>
+                    </option>
+                <?php endforeach; ?>
             </select>
 
             <button type="submit" class="filter-btn filter-blue">Filtrer</button>
-
-            <button class="filter-btn filter-green" type="submit">Rechercher</button>
+            <button type="submit" class="filter-btn filter-green">Rechercher</button>
         </form>
 
         <div
             class="teams"><?php
-
-            $search = $_GET['search'] ?? '';
-            $country = $_GET['country'] ?? '';
-
-            $teams = [
-                ["img" => "/img/LogosEquipes/vitality.png", "name" => "Team Vitality", "slug" => "vitality", "country" => "fr"],
-                ["img" => "/img/LogosEquipes/faze.png", "name" => "FaZe", "slug" => "faze", "country" => "eu"],
-                ["img" => "/img/LogosEquipes/mouz.png", "name" => "Mouz", "slug" => "mouz", "country" => "eu"],
-                ["img" => "/img/LogosEquipes/spirit.png", "name" => "Team Spirit", "slug" => "spirit", "country" => "ru"],
-            ];
-
-            $found = false;
-
-            foreach ($teams as $team) {
-
-                $matchSearch = ($search === '' || stripos($team['name'], $search) !== false);
-                $matchCountry = ($country === '' || $team['country'] === $country);
-
-                if ($matchSearch && $matchCountry) {
-                    renderTeamCard($team['img'], $team['name'], $team['slug']);
-                    $found = true;
+            if (empty($teams)) {
+                echo "<p>Aucune équipe trouvée.</p>";
+            } else {
+                foreach ($teams as $team) {
+                    renderTeamCard($team);
                 }
             }
-
-            if (!$found) {
-                echo "<p>Aucune équipe trouvée.</p>";
-            }
-
             ?>
         </div>
 
     </body>
-
 </html>
 
