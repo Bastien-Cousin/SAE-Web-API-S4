@@ -16,7 +16,7 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: var(--clr-bg);
+    background: var(--clr-white);
     color: var(--clr-text);
 }
 
@@ -29,7 +29,7 @@ h1 {
     margin-bottom: 48px;
     font-size: 2.5rem;
     font-weight: 900;
-    color: var(--clr-white);
+    color: var(--clr-bg);
     text-transform: uppercase;
     text-decoration: underline;
     text-decoration-color: var(--clr-accent);
@@ -47,7 +47,7 @@ h1 {
 .map-card {
     border-radius: 8px;
     overflow: hidden;
-    background: var(--clr-surface);
+    background: var(--clr-white);
     border: 1px solid var(--clr-border);
     border-left: 4px solid var(--clr-accent);
     transition: transform 0.3s, box-shadow 0.3s;
@@ -62,7 +62,7 @@ h1 {
     width: 100%;
     height: 200px;
     overflow: hidden;
-    background: var(--clr-bg);
+    background: var(--clr-white);
 }
 
 .card-image {
@@ -83,7 +83,6 @@ h1 {
 
 .placeholder-line {
     height: 10px;
-    background: linear-gradient(90deg, #1a1c22, #2a2c32, #1a1c22);
     border-radius: 5px;
     animation: shimmer 1.5s infinite;
 }
@@ -121,12 +120,42 @@ h1 {
 .card-title {
     font-size: 1.3rem;
     font-weight: bold;
-    color: var(--clr-white);
+    color: var(--clr-bg);
     margin-bottom: 8px;
     text-transform: uppercase;
 }
 
 .card-competition {
     font-size: 0.9rem;
-    color: var(--clr-text);
+    color: var(--clr-bg);
+}
+
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 48px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 24px;
+}
+
+.btn-add-map {
+    background: var(--clr-accent);
+    color: #000;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn-add-map:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(232, 146, 42, 0.3);
 }
