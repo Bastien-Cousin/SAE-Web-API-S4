@@ -1,13 +1,5 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 body {
-    font-family: sans-serif;
     background-color: #f0f2f5;
-    min-height: 100vh;
 }
 
 .page-header {
@@ -25,40 +17,48 @@ body {
     padding-bottom: 8px;
 }
 
-.cards-grid {
-    display: grid;
-    grid-template-columns: repeat(5, calc(20% - 16px));
-    gap: 20px;
-    justify-content: center;
-    padding: 30px 40px 60px;
-}
-
-.header-section {
+.filters {
     display: flex;
-    justify-content: space-between;
+    gap: 10px;
+    margin: 20px 0;
+    justify-content: center;
     align-items: center;
-    margin-bottom: 48px;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 24px;
+    flex-wrap: wrap;
 }
 
-.btn-add-map {
-    background: var(--clr-accent);
-    color: #000;
-    padding: 12px 24px;
-    border-radius: 6px;
-    font-weight: bold;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
-    transition: transform 0.2s, box-shadow 0.2s;
+.search-bar {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 2px solid #1b265c;
+    outline: none;
+}
+
+.filter-btn {
+    padding: 8px 14px;
+    margin: 20px 0;
     border: none;
+    border-radius: 5px;
     cursor: pointer;
-    text-decoration: none;
+    background-color: #1b265c;
+    color: white;
+    transition: 0.2s;
 }
 
-.btn-add-map:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(232, 146, 42, 0.3);
+.filter-btn:hover {
+    opacity: 0.8;
+}
+
+.filter-blue {
+    background-color: #1e3a8a;
+}
+
+.filter-green {
+    background-color: #16a34a;
+}
+
+.cards-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 40px;
 }
