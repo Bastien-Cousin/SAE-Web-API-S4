@@ -1,34 +1,12 @@
 import { fileURLToPath } from 'url'
 import * as path from 'path'
-import * as dotenv from 'dotenv'
-import pg from 'pg'
-import { PrismaPg } from '@prisma/adapter-pg'
 import * as fs from 'fs'
 import https from 'https'
 import http from 'http'
+import { prisma } from '../client.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
-// Charger .env.local (dev local) en priorité, puis .env (fallback)
-dotenv.config({ path: path.join(__dirname, '..', '..', '.env.local') })
-dotenv.config({ path: path.join(__dirname, '..', '..', '.env') })
-
-import { PrismaClient } from '@prisma/client'
-
-// Si on est dans Docker (pas de LOCAL_DEV), remplacer localhost par db
-let connectionString = process.env.DATABASE_URL || 'postgresql://sae_user:sae_password@localhost:5432/sae_db'
-
-if (!process.env.LOCAL_DEV) {
-    connectionString = connectionString.replace('localhost', 'db')
-}
-
-const client = new pg.Client({
-    connectionString,
-})
-
-const adapter = new PrismaPg(client)
-const prisma = new PrismaClient({ adapter })
 
 /**
  * Script pour télécharger les bannières des tournois depuis Liquipedia
@@ -171,30 +149,15 @@ async function downloadTournamentAssets() {
     }
 }
 
-// Gestion Ctrl+C
-process.on('SIGINT', async () => {
-    console.log('\n🛑 Arrêt du service...')
-    await prisma.$disconnect()
-    await client.end()
-    process.exit(0)
-})
-
-process.on('SIGTERM', async () => {
-    console.log('\n🛑 Arrêt du service...')
-    await prisma.$disconnect()
-    await client.end()
-    process.exit(0)
-})
-
 // Exécuter
-downloadTournamentAssets()
-    .then(async () => {
+(async () => {
+    try {
+        await downloadTournamentAssets()
+    } finally {
         await prisma.$disconnect()
-        await client.end()
-    })
-    .catch(async (e) => {
-        console.error(e)
-        await prisma.$disconnect()
-        await client.end()
-        process.exit(1)
-    })
+    }
+})().catch(async (e) => {
+    console.error(e)
+    await prisma.$disconnect()
+    process.exit(1)
+})
