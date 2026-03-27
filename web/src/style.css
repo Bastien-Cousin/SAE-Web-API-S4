@@ -160,7 +160,6 @@ img {
 .upcoming__row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 20px;
     padding: 20px;
     margin-bottom: 12px;
@@ -174,6 +173,8 @@ img {
     opacity: 0;
     transform: translateX(-16px);
     transition: transform .3s, box-shadow .3s;
+
+    flex-wrap: wrap;
 }
 
 .upcoming__row.is-visible {
@@ -193,16 +194,24 @@ img {
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--clr-white);
-    min-width: 120px;
+
+    min-width: unset;
+    max-width: 200px;
+
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    flex-shrink: 0;
 }
 
 .upcoming__teams {
+    position: relative;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 20px;
     flex: 1;
-    justify-content: center;
+    padding: 0 50px;
 }
+
 
 .upcoming__team {
     font-family: var(--font-display);
@@ -210,14 +219,22 @@ img {
     font-weight: 800;
     text-transform: uppercase;
     color: var(--clr-white);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .upcoming__vs {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: .7rem;
     letter-spacing: 3px;
     color: var(--clr-accent);
-    padding: 4px 10px;
+    padding: 0 6px;
     border: 1px solid var(--clr-accent-dim);
+    background: var(--clr-surface);
 }
 
 .upcoming__date {
