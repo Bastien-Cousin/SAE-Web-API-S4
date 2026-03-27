@@ -92,56 +92,62 @@ $joueurs = array_map(function ($player) {
 ?>
 <!DOCTYPE html>
 <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <title>Joueurs</title>
-        <link rel="stylesheet" href="../../style.css">
-        <link rel="stylesheet" href="Joueur.css">
-        <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
-        <link rel="stylesheet" href="../../components/ComponentCardPlayer/cardPlayer.css">
-    </head>
-    <body>
 
-        <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
+<head>
+    <meta charset="UTF-8">
+    <title>Joueurs</title>
+    <link rel="stylesheet" href="../../style.css">
+    <link rel="stylesheet" href="Joueur.css">
+    <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
+    <link rel="stylesheet" href="../../components/ComponentCardPlayer/cardPlayer.css">
+</head>
 
-        <div class="page-header">
-            <h1>Joueurs</h1>
+<body>
+
+    <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
+
+    <div class="page-header">
+        <div class="header-section">
+            <h1>Joueurs CS2</h1>
+            <a href="FormulaireJoueur.php" class="btn-add-map">+ Nouvelle Joueur</a>
         </div>
+    </div>
 
-        <form method="GET" class="filters">
-            <input type="text" name="search" placeholder="Rechercher un joueur..." class="search-bar" value="<?= htmlspecialchars($search) ?>">
+    <form method="GET" class="filters">
+        <input type="text" name="search" placeholder="Rechercher un joueur..." class="search-bar"
+            value="<?= htmlspecialchars($search) ?>">
 
-            <select name="region" class="filter-btn">
-                <option value="">Toutes les régions / zones</option>
-                <?php foreach ($regions as $regionOption): ?>
-                    <option
-                        value="<?= htmlspecialchars($regionOption) ?>" <?= ($region === $regionOption) ? 'selected' : '' ?>><?= htmlspecialchars(strtoupper($regionOption)) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
+        <select name="region" class="filter-btn">
+            <option value="">Toutes les régions / zones</option>
+            <?php foreach ($regions as $regionOption): ?>
+                <option value="<?= htmlspecialchars($regionOption) ?>" <?= ($region === $regionOption) ? 'selected' : '' ?>>
+                    <?= htmlspecialchars(strtoupper($regionOption)) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
 
-            <select name="sort" class="filter-btn">
-                <option value="pseudo_asc" <?= $sort === 'pseudo_asc' ? 'selected' : '' ?>>Pseudo A → Z</option>
-                <option value="pseudo_desc" <?= $sort === 'pseudo_desc' ? 'selected' : '' ?>>Pseudo Z → A</option>
-                <option value="age_asc" <?= $sort === 'age_asc' ? 'selected' : '' ?>>Âge ↑ (plus vieux)</option>
-                <option value="age_desc" <?= $sort === 'age_desc' ? 'selected' : '' ?>>Âge ↓ (plus jeune)</option>
-                <option value="earnings_asc" <?= $sort === 'earnings_asc' ? 'selected' : '' ?>>Gains ↑</option>
-                <option value="earnings_desc" <?= $sort === 'earnings_desc' ? 'selected' : '' ?>>Gains ↓</option>
-            </select>
+        <select name="sort" class="filter-btn">
+            <option value="pseudo_asc" <?= $sort === 'pseudo_asc' ? 'selected' : '' ?>>Pseudo A → Z</option>
+            <option value="pseudo_desc" <?= $sort === 'pseudo_desc' ? 'selected' : '' ?>>Pseudo Z → A</option>
+            <option value="age_asc" <?= $sort === 'age_asc' ? 'selected' : '' ?>>Âge ↑ (plus vieux)</option>
+            <option value="age_desc" <?= $sort === 'age_desc' ? 'selected' : '' ?>>Âge ↓ (plus jeune)</option>
+            <option value="earnings_asc" <?= $sort === 'earnings_asc' ? 'selected' : '' ?>>Gains ↑</option>
+            <option value="earnings_desc" <?= $sort === 'earnings_desc' ? 'selected' : '' ?>>Gains ↓</option>
+        </select>
 
-            <button type="submit" class="filter-btn filter-blue">Appliquer</button>
-        </form>
+        <button type="submit" class="filter-btn filter-blue">Appliquer</button>
+    </form>
 
-        <div
-            class="cards-grid">
-            <?php if (empty($joueurs)): ?>
-                <p>Aucun joueur trouvé.</p>
-            <?php else: ?>
+    <div class="cards-grid">
+        <?php if (empty($joueurs)): ?>
+            <p>Aucun joueur trouvé.</p>
+        <?php else: ?>
             <?php foreach ($joueurs as $joueur): ?>
-                    <?php afficherCarteJoueur($joueur); ?>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
+                <?php afficherCarteJoueur($joueur); ?>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
 
-    </body>
+</body>
+
 </html>
