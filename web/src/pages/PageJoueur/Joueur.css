@@ -92,3 +92,14 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(232, 146, 42, 0.3);
 }
+
+.player-card {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+}
+
+.player-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+}

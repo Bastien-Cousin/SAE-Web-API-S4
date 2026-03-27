@@ -1,111 +1,304 @@
 <!DOCTYPE html>
 <html lang="fr">
 
-    <head>
-        <meta charset="UTF-8">
-        <title>Description Match</title>
+<head>
+    <meta charset="UTF-8">
+    <title>Description Match</title>
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-        <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500&display=swap"
+        rel="stylesheet">
 
-        <link rel="stylesheet" href="../../style.css">
-        <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
-        <link rel="stylesheet" href="DescriptionMatch.css">
-    </head>
+    <link rel="stylesheet" href="../../style.css">
+    <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
+    <link rel="stylesheet" href="DescriptionMatch.css">
+</head>
 
-    <body>
+<body>
 
-        <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
+    <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
 
-        <?php
-        $team1 = $_GET['team1'] ?? 'Team A';
-        $team2 = $_GET['team2'] ?? 'Team B';
-        $score = $_GET['score'] ?? '0-0';
-        $mapsParam = $_GET['maps'] ?? '';
+    <?php
+    $host = getenv('POSTGRES_HOST') ?: 'db';
+    $port = getenv('POSTGRES_PORT') ?: '5432';
+    $dbname = getenv('POSTGRES_DB') ?: 'sae_db';
+    $user = getenv('POSTGRES_USER') ?: 'sae_user';
+    $password = getenv('POSTGRES_PASSWORD') ?: 'sae_password';
 
-        list($score1, $score2) = explode('-', $score);
+    try {
+        $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    } catch (PDOException $e) {
+        die("❌ Erreur de connexion à la base de données : " . $e->getMessage());
+    }
 
-        // Mapping logos
-        $logoMap = [
-            "Team Vitality" => "vitality.png",
-            "Vitality" => "vitality.png",
+    $matchId = $_GET['id'] ?? null;
+    if (!$matchId) {
+        die("❌ ID de match manquant.");
+    }
 
-            "Team Spirit" => "spirit.png",
-            "Spirit" => "spirit.png",
+    function safeLogo($logo, $logourl, $textlesslogourl)
+    {
+        if (!empty($textlesslogourl))
+            return $textlesslogourl;
+        if (!empty($logourl))
+            return $logourl;
+        if (!empty($logo))
+            return $logo;
+        return '/img/LogosEquipes/default.png';
+    }
 
-            "Mouz" => "mouz.png",
-            "MOUZ" => "mouz.png",
+    function parseScoreMaps($match2games)
+    {
+        if (empty($match2games)) {
+            return ['0-0', ''];
+        }
+        if (!is_array($match2games)) {
+            $decoded = json_decode($match2games, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return ['0-0', ''];
+            }
+            $match2games = $decoded;
+        }
+        if (!is_array($match2games)) {
+            return ['0-0', ''];
+        }
 
-            "Faze" => "faze.png",
-            "FaZe" => "faze.png"
-        ];
+        $team1Wins = 0;
+        $team2Wins = 0;
+        $maps = [];
+        foreach ($match2games as $map) {
+            if (!is_array($map))
+                continue;
 
-        // Chemin cohérent avec AccueilMatch
-        $baseLogoPath = "/img/LogosEquipes/";
+            $mapName = $map['map'] ?? $map['name'] ?? null;
 
-        $logo1 = $baseLogoPath . ($logoMap[$team1] ?? "default.png");
-        $logo2 = $baseLogoPath . ($logoMap[$team2] ?? "default.png");
+            $score = null;
+            if (isset($map['score']) && is_string($map['score'])) {
+                $score = $map['score'];
+            } elseif (isset($map['result']) && is_string($map['result'])) {
+                $score = $map['result'];
+            } elseif (isset($map['scores']) && is_array($map['scores']) && count($map['scores']) >= 2) {
+                $s1 = intval($map['scores'][0] ?? 0);
+                $s2 = intval($map['scores'][1] ?? 0);
+                $score = "{$s1}-{$s2}";
+            }
 
-        // Maps parsing
-        $mapsData = [];
+            if (!$mapName || !$score || $score === '0-0')
+                continue;
 
-        if (!empty($mapsParam)) {
-            $mapsArray = explode(';', $mapsParam);
+            if (!preg_match('/^(\d+)-(\d+)$/', $score, $m))
+                continue;
 
-            foreach ($mapsArray as $mapString) {
-                list($mapName, $scores) = explode(':', $mapString);
-                list($s1, $s2) = explode('-', $scores);
+            $s1 = intval($m[1]);
+            $s2 = intval($m[2]);
 
-                $mapsData[] = [
-                    "name" => $mapName,
-                    "team1" => (int) $s1,
-                    "team2" => (int) $s2
-                ];
+            if (($map['status'] ?? '') !== 'notplayed') {
+                if ($s1 > $s2) {
+                    $team1Wins++;
+                } elseif ($s2 > $s1) {
+                    $team2Wins++;
+                }
+
+                $maps[] = "$mapName:$score";
             }
         }
-        ?>
 
-        <!-- Bouton retour --><a href="/pages/PageAccueilMatch/AccueilMatch.php" class="back-btn"> ← Retour</a>
+        if (empty($maps)) {
+            return ['0-0', ''];
+        }
+        return ["{$team1Wins}-{$team2Wins}", implode(';', $maps)];
+    }
 
-        <div class="match-details">
+    function parseScoreFromOpponents($match2opponents)
+    {
+        if (empty($match2opponents)) {
+            return ['0-0', ''];
+        }
+        if (!is_array($match2opponents)) {
+            $decoded = json_decode($match2opponents, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return ['0-0', ''];
+            }
+            $match2opponents = $decoded;
+        }
+        if (!is_array($match2opponents)) {
+            return ['0-0', ''];
+        }
 
-            <div class="match-header">
+        $scores = [];
+        $names = [];
 
-                <div class="team">
-                    <img src="<?php echo $logo1; ?>" alt="Logo équipe 1">
-                    <h2><?php echo $team1; ?></h2>
-                </div>
+        foreach ($match2opponents as $opp) {
+            if (!is_array($opp)) {
+                continue;
+            }
+            if (isset($opp['score'])) {
+                $scores[] = intval($opp['score']);
+            } elseif (isset($opp['scores']) && is_array($opp['scores'])) {
+                $scores[] = intval($opp['scores'][0] ?? 0);
+            }
+            if (isset($opp['name'])) {
+                $names[] = $opp['name'];
+            } elseif (isset($opp['team'])) {
+                $names[] = $opp['team'];
+            }
+        }
 
-                <div class="score-center">
-                    <h1><?php echo "$score1 - $score2"; ?></h1>
-                </div>
+        if (count($scores) >= 2) {
+            return ["{$scores[0]}-{$scores[1]}", ''];
+        }
 
-                <div class="team">
-                    <h2><?php echo $team2; ?></h2>
-                    <img src="<?php echo $logo2; ?>" alt="Logo équipe 2">
-                </div>
+        if (isset($match2opponents['team1']) && isset($match2opponents['team2'])) {
+            $s1 = intval($match2opponents['team1']['score'] ?? $match2opponents['team1']['result'] ?? 0);
+            $s2 = intval($match2opponents['team2']['score'] ?? $match2opponents['team2']['result'] ?? 0);
+            return ["{$s1}-{$s2}", ''];
+        }
 
+        return ['0-0', ''];
+    }
+
+    $stmt = $pdo->prepare("SELECT m.pageid, m.date, m.match2games, m.winner, t1.name AS team1_name, t1.logo AS team1_logo, t1.logourl AS team1_logourl, t1.textlesslogourl AS team1_textlesslogourl, t2.name AS team2_name, t2.logo AS team2_logo, t2.logourl AS team2_logourl, t2.textlesslogourl AS team2_textlesslogourl, m.match2opponents FROM match m LEFT JOIN team t1 ON m.team1_id = t1.pageid LEFT JOIN team t2 ON m.team2_id = t2.pageid WHERE m.pageid = ?");
+    $stmt->execute([$matchId]);
+    $match = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$match) {
+        die("❌ Match non trouvé.");
+    }
+
+    $team1Logo = safeLogo($match['team1_logo'] ?? '', $match['team1_logourl'] ?? '', $match['team1_textlesslogourl'] ?? '');
+    $team2Logo = safeLogo($match['team2_logo'] ?? '', $match['team2_logourl'] ?? '', $match['team2_textlesslogourl'] ?? '');
+    $team1Name = $match['team1_name'] ?? '';
+    $team2Name = $match['team2_name'] ?? '';
+    $date = !empty($match['date']) ? date('Y-m-d', strtotime($match['date'])) : 'N/A';
+
+    $match2opponents = $match['match2opponents'] ?? '';
+    if (!is_array($match2opponents)) {
+        $decodedOpponents = json_decode($match2opponents, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            $match2opponents = $decodedOpponents;
+        }
+    }
+
+    if (empty($team1Name) || empty($team2Name)) {
+        if (is_array($match2opponents)) {
+            $names = [];
+            foreach ($match2opponents as $opp) {
+                if (is_array($opp)) {
+                    if (!empty($opp['name'])) {
+                        $names[] = $opp['name'];
+                    } elseif (!empty($opp['team'])) {
+                        $names[] = $opp['team'];
+                    }
+                }
+            }
+            if (empty($team1Name) && !empty($names[0])) {
+                $team1Name = $names[0];
+            }
+            if (empty($team2Name) && !empty($names[1])) {
+                $team2Name = $names[1];
+            }
+        }
+    }
+
+    $match2games = $match['match2games'] ?? '';
+    list($computedScore, $computedMaps) = parseScoreMaps($match2games);
+
+    if ($computedScore === '0-0' && !empty($match['winner'])) {
+        if (stripos($match['winner'], $team1Name) !== false) {
+            $computedScore = '2-1';
+        } elseif (stripos($match['winner'], $team2Name) !== false) {
+            $computedScore = '1-2';
+        }
+    }
+
+    if ($computedScore === '0-0') {
+        list($fallbackScore, $fallbackMaps) = parseScoreFromOpponents($match2opponents);
+        if ($fallbackScore !== '0-0') {
+            $computedScore = $fallbackScore;
+            if (!empty($fallbackMaps)) {
+                $computedMaps = $fallbackMaps;
+            }
+        }
+    }
+
+    list($score1, $score2) = explode('-', $computedScore);
+
+    $logoMap = [
+        "Team Vitality" => "vitality.png",
+        "Vitality" => "vitality.png",
+        "Team Spirit" => "spirit.png",
+        "Spirit" => "spirit.png",
+        "Mouz" => "mouz.png",
+        "MOUZ" => "mouz.png",
+        "Faze" => "faze.png",
+        "FaZe" => "faze.png"
+    ];
+
+    $baseLogoPath = "/img/LogosEquipes/";
+
+    $logo1 = $team1Logo ?: $baseLogoPath . ($logoMap[$team1Name] ?? "default.png");
+    $logo2 = $team2Logo ?: $baseLogoPath . ($logoMap[$team2Name] ?? "default.png");
+
+    $mapsData = [];
+
+    if (!empty($computedMaps)) {
+        $mapsArray = explode(';', $computedMaps);
+
+        foreach ($mapsArray as $mapString) {
+            list($mapName, $scores) = explode(':', $mapString);
+            list($s1, $s2) = explode('-', $scores);
+
+            $mapsData[] = [
+                "name" => $mapName,
+                "team1" => (int) $s1,
+                "team2" => (int) $s2
+            ];
+        }
+    }
+    ?>
+
+    <a href="/pages/PageAccueilMatch/AccueilMatch.php" class="back-btn"> ← Retour</a>
+
+    <div class="match-details">
+
+        <div class="match-header">
+
+            <div class="team">
+                <img src="<?php echo $logo1; ?>" alt="Logo équipe 1">
+                <h2><?php echo $team1Name; ?></h2>
             </div>
 
-            <div
-                class="maps">
+            <div class="score-center">
+                <h1><?php echo "$score1 - $score2"; ?></h1>
+            </div>
 
-                <?php foreach ($mapsData as $map): ?>
-
-                    <div class="map">
-                        <span class="score-left"><?= $map["team1"] ?></span>
-                        <span class="map-name"><?= $map["name"] ?></span>
-                        <span class="score-right"><?= $map["team2"] ?></span>
-                    </div>
-
-                <?php endforeach; ?>
-
+            <div class="team">
+                <h2><?php echo $team2Name; ?></h2>
+                <img src="<?php echo $logo2; ?>" alt="Logo équipe 2">
             </div>
 
         </div>
 
-    </body>
+        <div class="maps">
+
+            <?php foreach ($mapsData as $map): ?>
+
+                <div class="map">
+                    <span class="score-left"><?= $map["team1"] ?></span>
+                    <span class="map-name"><?= $map["name"] ?></span>
+                    <span class="score-right"><?= $map["team2"] ?></span>
+                </div>
+
+            <?php endforeach; ?>
+
+        </div>
+
+    </div>
+
+</body>
 
 </html>

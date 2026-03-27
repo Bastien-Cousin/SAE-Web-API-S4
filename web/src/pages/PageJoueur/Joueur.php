@@ -1,7 +1,6 @@
 <?php
 include __DIR__ . '/../../components/ComponentCardPlayer/cardPlayer.php';
 
-// Connexion à la base
 $host = getenv('POSTGRES_HOST') ?: 'db';
 $port = getenv('POSTGRES_PORT') ?: '5432';
 $dbname = getenv('POSTGRES_DB') ?: 'sae_db';
@@ -15,37 +14,51 @@ try {
     die("❌ Erreur de connexion à la base de données : " . $e->getMessage());
 }
 
-// Récupération des filtres
 $search = $_GET['search'] ?? '';
 $region = $_GET['region'] ?? '';
 $sort = $_GET['sort'] ?? 'pseudo_asc';
 
-// Toutes les régions pour le select
+$limit = 50;
+$page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+$offset = ($page - 1) * $limit;
+
 $stmtRegions = $pdo->query("SELECT DISTINCT region FROM player ORDER BY region ASC");
 $regions = $stmtRegions->fetchAll(PDO::FETCH_COLUMN);
 
-// Requête principale
-$sql = "SELECT pageid, objectname, name, birthdate, status, type, earnings, nationality, region
-        FROM player
-        WHERE 1=1";
+$sql = "SELECT pageid, objectname, name, birthdate, status, type, earnings, nationality, region 
+        FROM player WHERE 1=1";
 
 $params = [];
+
 if ($search !== '') {
     $sql .= " AND (name ILIKE :search OR objectname ILIKE :search)";
     $params[':search'] = "%$search%";
 }
+
 if ($region !== '') {
     $sql .= " AND region = :region";
     $params[':region'] = $region;
 }
 
+$sql .= " ORDER BY name ASC LIMIT :limit OFFSET :offset";
+
 $stmt = $pdo->prepare($sql);
-$stmt->execute($params);
+
+foreach ($params as $key => $value) {
+    $stmt->bindValue($key, $value);
+}
+
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+
+$stmt->execute();
+
 $playersData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Ajouter pseudo nettoyé
 foreach ($playersData as &$player) {
     $pseudo = $player['objectname'] ?? 'N/A';
+
     if (strpos($pseudo, '_') !== false) {
         $parts = explode('_', $pseudo);
         $player['pseudo'] = end($parts);
@@ -138,7 +151,7 @@ $joueurs = array_map(function ($player) {
         <button type="submit" class="filter-btn filter-blue">Appliquer</button>
     </form>
 
-    <div class="cards-grid">
+    <div class="cards-grid" id="cards-container">
         <?php if (empty($joueurs)): ?>
             <p>Aucun joueur trouvé.</p>
         <?php else: ?>
@@ -148,6 +161,56 @@ $joueurs = array_map(function ($player) {
         <?php endif; ?>
     </div>
 
+    <script>
+        let page = 1;
+        let loading = false;
+
+        const container = document.getElementById('cards-container');
+
+        function animateCards() {
+            const cards = document.querySelectorAll('.player-card:not(.visible)');
+            const trigger = window.innerHeight;
+
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                if (rect.top < trigger - 50) {
+                    card.classList.add('visible');
+                }
+            });
+        }
+
+        async function loadMorePlayers() {
+            if (loading) return;
+            loading = true;
+            page++;
+
+            const params = new URLSearchParams(window.location.search);
+            params.set('page', page);
+
+            const res = await fetch('load_players.php?' + params.toString());
+            const html = await res.text();
+
+            if (html.trim() === "") {
+                window.removeEventListener('scroll', onScroll);
+                return;
+            }
+
+            container.insertAdjacentHTML('beforeend', html);
+            animateCards();
+
+            loading = false;
+        }
+
+        function onScroll() {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+                loadMorePlayers();
+            }
+        }
+
+        window.addEventListener('scroll', onScroll);
+        window.addEventListener('scroll', animateCards);
+        window.addEventListener('load', animateCards);
+    </script>
 </body>
 
 </html>
