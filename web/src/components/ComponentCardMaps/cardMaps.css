@@ -71,6 +71,9 @@
 
 .card-info {
     padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .card-title {
@@ -84,4 +87,16 @@
     margin-top: 5px;
     font-size: 14px;
     color: #666;
+}
+
+.card-match-count {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #1b265c;
+    font-weight: 600;
+    background: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: 12px;
+    display: inline-block;
+    align-self: flex-end;
 }
