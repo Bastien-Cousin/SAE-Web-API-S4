@@ -23,12 +23,10 @@
     justify-content: center;
     opacity: 0.3;
     pointer-events: none;
-}
-
-.card-logo img {
-    width: 130px;
-    height: 130px;
-    object-fit: contain;
+    background-size: 90px 90px;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(0.5px);
 }
 
 .logo-placeholder {

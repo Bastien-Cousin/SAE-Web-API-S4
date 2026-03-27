@@ -5,3 +5,7 @@ node_modules
 /src/generated/prisma
 coverage/
 dist/
+
+# Public assets (téléchargés depuis Liquipedia - ne pas committer)
+public/assets/teams/**/*.png
+public/assets/tournaments/**/*.png

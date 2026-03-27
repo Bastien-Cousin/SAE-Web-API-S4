@@ -110,9 +110,9 @@ async function updateTournaments(): Promise<void> {
     console.log('='.repeat(60))
 
     const tournamentsData: tournament[] = []
-    const params: PaginationParams = {
+    const params: any = {
         wiki: 'counterstrike',
-        conditions: '[[date::>2020-01-01]]',
+        conditions: '[[liquipediatier::1]] AND [[date::>2025-01-01]]',
         limit: 100,
         offset: 0,
     }

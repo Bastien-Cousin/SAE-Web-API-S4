@@ -28,7 +28,7 @@ html {
 
 body {
     background: var(--clr-white);
-    color: var(--clr-text);
+    color: var(--clr-white);
     font-family: var(--font-body);
     line-height: 1.6;
     overflow-x: hidden;
@@ -70,7 +70,7 @@ img {
     inset: 0;
 
     background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(10px);
 
     z-index: 0;
 }
