@@ -69,6 +69,9 @@ app.get('/api/health', async (_req: Request, res: Response) => {
   }
 })
 
+// Servir les fichiers statiques (assets téléchargés)
+app.use('/assets', express.static(path.join(__dirname, '..', 'public', 'assets')))
+
 // Router d'authentification
 app.use(authRouter);
 

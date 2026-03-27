@@ -66,9 +66,26 @@
         return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
     }
 
-    function safeLogo($logo, $logourl, $textlesslogourl)
+    function getTeamLogoByName($pdo, $teamName)
     {
-        return $textlesslogourl ?: $logourl ?: $logo ?: '/img/LogosEquipes/default.png';
+        try {
+            $stmt = $pdo->prepare("SELECT logourl, textlesslogourl FROM team WHERE LOWER(name) = LOWER(:name) LIMIT 1");
+            $stmt->execute([':name' => $teamName]);
+            $team = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($team) {
+                $logo = $team['logourl'] ?? $team['textlesslogourl'] ?? '';
+                return $logo ?: null;
+            }
+        } catch (Exception $e) {
+            error_log("Error looking up team logo for: $teamName - " . $e->getMessage());
+        }
+        return null;
+    }
+
+    function safeLogo($logo)
+    {
+        return !empty($logo) ? $logo : '/img/LogosEquipes/default.png';
     }
 
     function extractTeams($match)
@@ -128,8 +145,8 @@
 
     $sql = "
 SELECT m.*, 
-t1.name AS team1_name, t1.logo AS team1_logo, t1.logourl AS team1_logourl, t1.textlesslogourl AS team1_textlesslogourl,
-t2.name AS team2_name, t2.logo AS team2_logo, t2.logourl AS team2_logourl, t2.textlesslogourl AS team2_textlesslogourl
+t1.name AS team1_name,
+t2.name AS team2_name
 FROM match m
 LEFT JOIN team t1 ON m.team1_id = t1.pageid
 LEFT JOIN team t2 ON m.team2_id = t2.pageid
@@ -187,17 +204,8 @@ WHERE 1=1
                 list($team1, $team2) = extractTeams($match);
                 $score = computeScore($match);
 
-                $team1Logo = safeLogo(
-                    $match['team1_logo'] ?? '',
-                    $match['team1_logourl'] ?? '',
-                    $match['team1_textlesslogourl'] ?? ''
-                );
-
-                $team2Logo = safeLogo(
-                    $match['team2_logo'] ?? '',
-                    $match['team2_logourl'] ?? '',
-                    $match['team2_textlesslogourl'] ?? ''
-                );
+                $team1Logo = safeLogo(getTeamLogoByName($pdo, $team1));
+                $team2Logo = safeLogo(getTeamLogoByName($pdo, $team2));
 
                 $date = !empty($match['date'])
                     ? date('Y-m-d', strtotime($match['date']))

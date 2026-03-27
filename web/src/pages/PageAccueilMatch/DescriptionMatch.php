@@ -40,15 +40,26 @@
         die("❌ ID de match manquant.");
     }
 
-    function safeLogo($logo, $logourl, $textlesslogourl)
+    function getTeamLogoByName($pdo, $teamName)
     {
-        if (!empty($textlesslogourl))
-            return $textlesslogourl;
-        if (!empty($logourl))
-            return $logourl;
-        if (!empty($logo))
-            return $logo;
-        return '/img/LogosEquipes/default.png';
+        try {
+            $stmt = $pdo->prepare("SELECT logourl, textlesslogourl FROM team WHERE LOWER(name) = LOWER(:name) LIMIT 1");
+            $stmt->execute([':name' => $teamName]);
+            $team = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($team) {
+                $logo = $team['logourl'] ?? $team['textlesslogourl'] ?? '';
+                return $logo ?: null;
+            }
+        } catch (Exception $e) {
+            error_log("Error looking up team logo for: $teamName - " . $e->getMessage());
+        }
+        return null;
+    }
+
+    function safeLogo($logo)
+    {
+        return !empty($logo) ? $logo : '/img/LogosEquipes/default.png';
     }
 
     function parseScoreMaps($match2games)
@@ -161,7 +172,7 @@
         return ['0-0', ''];
     }
 
-    $stmt = $pdo->prepare("SELECT m.pageid, m.date, m.match2games, m.winner, t1.name AS team1_name, t1.logo AS team1_logo, t1.logourl AS team1_logourl, t1.textlesslogourl AS team1_textlesslogourl, t2.name AS team2_name, t2.logo AS team2_logo, t2.logourl AS team2_logourl, t2.textlesslogourl AS team2_textlesslogourl, m.match2opponents FROM match m LEFT JOIN team t1 ON m.team1_id = t1.pageid LEFT JOIN team t2 ON m.team2_id = t2.pageid WHERE m.pageid = ?");
+    $stmt = $pdo->prepare("SELECT m.pageid, m.date, m.match2games, m.winner, m.match2opponents FROM match m WHERE m.pageid = ?");
     $stmt->execute([$matchId]);
     $match = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -169,10 +180,8 @@
         die("❌ Match non trouvé.");
     }
 
-    $team1Logo = safeLogo($match['team1_logo'] ?? '', $match['team1_logourl'] ?? '', $match['team1_textlesslogourl'] ?? '');
-    $team2Logo = safeLogo($match['team2_logo'] ?? '', $match['team2_logourl'] ?? '', $match['team2_textlesslogourl'] ?? '');
-    $team1Name = $match['team1_name'] ?? '';
-    $team2Name = $match['team2_name'] ?? '';
+    $team1Name = '';
+    $team2Name = '';
     $date = !empty($match['date']) ? date('Y-m-d', strtotime($match['date'])) : 'N/A';
 
     $match2opponents = $match['match2opponents'] ?? '';
@@ -183,26 +192,27 @@
         }
     }
 
-    if (empty($team1Name) || empty($team2Name)) {
-        if (is_array($match2opponents)) {
-            $names = [];
-            foreach ($match2opponents as $opp) {
-                if (is_array($opp)) {
-                    if (!empty($opp['name'])) {
-                        $names[] = $opp['name'];
-                    } elseif (!empty($opp['team'])) {
-                        $names[] = $opp['team'];
-                    }
+    if (is_array($match2opponents)) {
+        $names = [];
+        foreach ($match2opponents as $opp) {
+            if (is_array($opp)) {
+                if (!empty($opp['name'])) {
+                    $names[] = $opp['name'];
+                } elseif (!empty($opp['team'])) {
+                    $names[] = $opp['team'];
                 }
             }
-            if (empty($team1Name) && !empty($names[0])) {
-                $team1Name = $names[0];
-            }
-            if (empty($team2Name) && !empty($names[1])) {
-                $team2Name = $names[1];
-            }
+        }
+        if (!empty($names[0])) {
+            $team1Name = $names[0];
+        }
+        if (!empty($names[1])) {
+            $team2Name = $names[1];
         }
     }
+
+    $team1Logo = safeLogo(getTeamLogoByName($pdo, $team1Name));
+    $team2Logo = safeLogo(getTeamLogoByName($pdo, $team2Name));
 
     $match2games = $match['match2games'] ?? '';
     list($computedScore, $computedMaps) = parseScoreMaps($match2games);
@@ -226,22 +236,6 @@
     }
 
     list($score1, $score2) = explode('-', $computedScore);
-
-    $logoMap = [
-        "Team Vitality" => "vitality.png",
-        "Vitality" => "vitality.png",
-        "Team Spirit" => "spirit.png",
-        "Spirit" => "spirit.png",
-        "Mouz" => "mouz.png",
-        "MOUZ" => "mouz.png",
-        "Faze" => "faze.png",
-        "FaZe" => "faze.png"
-    ];
-
-    $baseLogoPath = "/img/LogosEquipes/";
-
-    $logo1 = $team1Logo ?: $baseLogoPath . ($logoMap[$team1Name] ?? "default.png");
-    $logo2 = $team2Logo ?: $baseLogoPath . ($logoMap[$team2Name] ?? "default.png");
 
     $mapsData = [];
 
@@ -268,7 +262,7 @@
         <div class="match-header">
 
             <div class="team">
-                <img src="<?php echo $logo1; ?>" alt="Logo équipe 1">
+                <img src="<?php echo $team1Logo; ?>" alt="Logo équipe 1">
                 <h2><?php echo $team1Name; ?></h2>
             </div>
 
@@ -278,7 +272,7 @@
 
             <div class="team">
                 <h2><?php echo $team2Name; ?></h2>
-                <img src="<?php echo $logo2; ?>" alt="Logo équipe 2">
+                <img src="<?php echo $team2Logo; ?>" alt="Logo équipe 2">
             </div>
 
         </div>

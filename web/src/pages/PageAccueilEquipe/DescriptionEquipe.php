@@ -25,8 +25,14 @@ $teamData = $stmtTeam->fetch(PDO::FETCH_ASSOC);
 if (!$teamData)
     die("Équipe non trouvée");
 
-$stmtPlayers = $pdo->prepare("SELECT * FROM player WHERE team_id = :teamId ORDER BY name ASC");
-$stmtPlayers->execute([':teamId' => $teamData['pageid']]);
+$stmtPlayers = $pdo->prepare("
+    SELECT p.*, t.logourl, t.textlesslogourl 
+    FROM player p 
+    LEFT JOIN team t ON LOWER(REPLACE(REPLACE(p.teampagename, '_', ' '), '-', '')) = LOWER(REPLACE(REPLACE(SUBSTRING(t.objectname FROM POSITION('_team_' IN t.objectname) + 6), '_', ' '), '-', ''))
+    WHERE LOWER(REPLACE(REPLACE(p.teampagename, '_', ' '), '-', '')) = LOWER(REPLACE(REPLACE(SUBSTRING(:teamObjectName FROM POSITION('_team_' IN :teamObjectName) + 6), '_', ' '), '-', ''))
+    ORDER BY p.name ASC
+");
+$stmtPlayers->execute([':teamObjectName' => $teamObjectName]);
 $playersData = $stmtPlayers->fetchAll(PDO::FETCH_ASSOC);
 
 $equipe = [
@@ -52,7 +58,7 @@ $joueursEquipe = array_map(function ($player) {
         'statut' => $player['status'] ?? 'Actif',
         'role' => $player['type'] ?? 'player',
         'argent_gagne' => isset($player['earnings']) ? number_format($player['earnings']) . ' €' : '0 €',
-        'logo' => $player['logourl'] ?? '/img/default-logo.png',
+        'logo' => $player['logourl'] ?? $player['textlesslogourl'] ?? '/img/default-logo.png',
         'couleur_logo' => '#cccccc',
     ];
 }, $playersData);

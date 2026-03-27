@@ -49,7 +49,7 @@ export const getTeamById = async (req: Request, res: Response) => {
         })
 
         if (!team) return res.status(404).json({ error: 'Équipe non trouvée' })
-        res.json(team)
+        res.json(convertBigInt(team))
     } catch (error) {
         console.error(error)
         res.status(500).json({ error: 'Erreur serveur' })
@@ -71,7 +71,7 @@ export const searchTeams = async (req: Request, res: Response) => {
             take: 20,
         })
 
-        res.json(teams)
+        res.json(convertBigInt(teams))
     } catch (error) {
         console.error(error)
         res.status(500).json({ error: 'Erreur serveur' })
