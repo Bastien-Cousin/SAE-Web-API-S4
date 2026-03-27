@@ -6,6 +6,7 @@ interface Settings {
     API_KEY_TEAM: string;
     API_KEY_PLAYER: string;
     API_KEY_MATCHES: string;
+    API_KEY_TOURNAMENT: string;
     POSTGRES_PASSWORD: string;
     POSTGRES_DB: string;
     POSTGRES_USER: string;
@@ -17,6 +18,7 @@ const settings: Settings = {
     API_KEY_TEAM: process.env.LIQUIPEDIA_API_KEY_TEAM || '',
     API_KEY_PLAYER: process.env.LIQUIPEDIA_API_KEY_PLAYER || '',
     API_KEY_MATCHES: process.env.LIQUIPEDIA_API_KEY_MATCHES || '',
+    API_KEY_TOURNAMENT: process.env.LIQUIPEDIA_API_KEY_TOURNAMENT || '',
     POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD || 'User06',
     POSTGRES_DB: process.env.POSTGRES_DB || 'postgres',
     POSTGRES_USER: process.env.POSTGRES_USER || 'user',
