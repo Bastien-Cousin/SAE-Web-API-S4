@@ -14,7 +14,7 @@ function createMapCard($nomMap, $competition, $imagePath = null)
         </div>
         <div class="card-info">
             <h3 class="card-title">' . htmlspecialchars($nomMap) . '</h3>
-            <p class="card-competition">En compétition : ' . htmlspecialchars($competition) . '</p>
+            <p class="card-competition">Créée le : ' . htmlspecialchars($competition) . '</p>
         </div>
     </div>';
 }

@@ -25,58 +25,58 @@ require_once '../../components/ComponentCardMaps/cardMaps.php';
         <div class="container">
             <?php echo createMapCard(
                 'Ancient',
-                '2020 - "current"',
+                '3 décembre 2020',
                 'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
             ); ?>
             <?php echo createMapCard(
                 'Anubis',
-                '2020 - "current"',
-                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+                '31 mars 2020',
+                'https://i.postimg.cc/rwN2w9f9/800px-CS2-de-anubis.png'
             ); ?>
             <?php echo createMapCard(
                 'Dust II',
-                '2001 - "current"',
-                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+                'mars 2001',
+                'https://i.postimg.cc/1X8ygN8D/800px-CS2-Dust-2-A-Site.jpg'
             ); ?>
             <?php echo createMapCard(
-                'Dust II',
-                '2001 - "current"',
-                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+                'Inferno',
+                '2001',
+                'https://i.postimg.cc/5tt9cGfS/800px-CS2-de-inferno.png'
             ); ?>
             <?php echo createMapCard(
-                'Dust II',
-                '2001 - "current"',
-                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+                'Mirage',
+                '12 juin 2013',
+                'https://i.postimg.cc/MKG9QmZs/800px-CS2-de-mirage.png'
             ); ?>
             <?php echo createMapCard(
-                'Dust II',
-                '2001 - "current"',
-                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+                'Nuke',
+                'novembre 1999',
+                'https://i.postimg.cc/NM4xy53Q/800px-CS2-de-nuke.png'
             ); ?>
             <?php echo createMapCard(
-                'Dust II',
-                '2001 - "current"',
-                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+                'Overpass',
+                '18 décembre 2013',
+                'https://i.postimg.cc/yxRcmx58/800px-CS2-de-overpass.png'
             ); ?>
             <?php echo createMapCard(
-                'Dust II',
-                '2001 - "current"',
-                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+                'Train',
+                '1999',
+                'https://i.postimg.cc/zBgVMMkH/800px-CS2-de-train.png'
             ); ?>
             <?php echo createMapCard(
-                'Dust II',
-                '2001 - "current"',
-                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+                'Vertigo',
+                '1999',
+                'https://i.postimg.cc/YS49GVTt/800px-CS2-de-vertigo.png'
             ); ?>
             <?php echo createMapCard(
-                'Dust II',
-                '2001 - "current"',
-                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+                'Office ',
+                '2000',
+                'https://i.postimg.cc/52DJGtkW/image-2026-03-26-151546491.png'
             ); ?>
             <?php echo createMapCard(
-                'Dust II',
-                '2001 - "current"',
-                'https://i.postimg.cc/VsHhCJMs/800px-CS2-de-ancient.png'
+                'Italy',
+                '8 juin 2000',
+                'https://i.postimg.cc/q7ffw5gZ/800px-CS2-Italy-CT-Spawn.jpg'
             ); ?>
 
         </div>
