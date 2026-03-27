@@ -15,6 +15,11 @@
 
     <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
 
+
+    <div class="header-section">
+        <h1>Matchs CS2</h1> <a href="FormulaireMap.php" class="btn-add-map">+ Nouveau Match</a>
+    </div>
+
     <form method="GET" class="filters">
         <input type="text" name="search" placeholder="Rechercher une équipe..." class="search-bar"
             value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
@@ -47,7 +52,6 @@
     </form>
 
     <?php include __DIR__ . '/../../components/componentMatchBar/matchBar.php'; ?>
-
     <?php
     $pdo = new PDO(
         "pgsql:host=" . (getenv('POSTGRES_HOST') ?: 'db') .
@@ -72,7 +76,7 @@
             $stmt = $pdo->prepare("SELECT logourl, textlesslogourl FROM team WHERE LOWER(name) = LOWER(:name) LIMIT 1");
             $stmt->execute([':name' => $teamName]);
             $team = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if ($team) {
                 $logo = $team['logourl'] ?? $team['textlesslogourl'] ?? '';
                 return $logo ?: null;

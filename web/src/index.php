@@ -75,29 +75,77 @@
 
     <section class="upcoming">
         <div class="container">
-            <h2 class="section-title">Prochains matchs</h2>
+            <h2 class="section-title">Matchs récents</h2>
 
             <?php
-            $matches = [
-                ['t1' => 'Vitality', 't2' => 'FaZe Clan', 'event' => 'ESL Pro League', 'date' => "Aujourd'hui 19:00"],
-                ['t1' => 'NaVi', 't2' => 'G2', 'event' => 'BLAST Premier', 'date' => 'Demain 17:30'],
-                ['t1' => 'Spirit', 't2' => 'ENCE', 'event' => 'IEM Cologne', 'date' => '26 Mar 20:00'],
-            ];
+            $matches = [];
+
+            try {
+                $stmt_matches = $pdo->query("
+                    SELECT 
+                        m.date,
+                        m.tournament,
+                        m.match2opponents,
+                        t1.name AS team1_name,
+                        t2.name AS team2_name
+                    FROM match m
+                    LEFT JOIN team t1 ON m.team1_id = t1.pageid
+                    LEFT JOIN team t2 ON m.team2_id = t2.pageid
+                    WHERE m.finished = true
+                    ORDER BY m.date DESC
+                    LIMIT 3
+                ");
+
+                $matches = $stmt_matches->fetchAll(PDO::FETCH_ASSOC);
+
+            } catch (PDOException $e) {
+                error_log("Erreur matchs : " . $e->getMessage());
+            }
             ?>
 
             <div class="upcoming__list">
-                <?php foreach ($matches as $m): ?>
+                <?php foreach ($matches as $m):
+
+                    $team1 = $m['team1_name'];
+                    $team2 = $m['team2_name'];
+
+                    if ((!$team1 || !$team2) && !empty($m['match2opponents'])) {
+                        $opponents = json_decode($m['match2opponents'], true);
+
+                        if (isset($opponents[0]['name']))
+                            $team1 = $opponents[0]['name'];
+                        if (isset($opponents[1]['name']))
+                            $team2 = $opponents[1]['name'];
+                    }
+
+                    $team1 = $team1 ?: 'N/A';
+                    $team2 = $team2 ?: 'N/A';
+
+                    $date = $m['date']
+                        ? date('d/m/Y H:i', strtotime($m['date']))
+                        : 'Date inconnue';
+
+                    ?>
                     <div class="upcoming__row">
-                        <span class="upcoming__event"><?= htmlspecialchars($m['event']) ?></span>
+                        <span class="upcoming__event">
+                            <?= htmlspecialchars($m['tournament'] ?? 'Inconnu') ?>
+                        </span>
 
                         <div class="upcoming__teams">
-                            <span class="upcoming__team"><?= htmlspecialchars($m['t1']) ?></span>
+                            <span class="upcoming__team">
+                                <?= htmlspecialchars($team1) ?>
+                            </span>
+
                             <span class="upcoming__vs">VS</span>
-                            <span class="upcoming__team"><?= htmlspecialchars($m['t2']) ?></span>
+
+                            <span class="upcoming__team">
+                                <?= htmlspecialchars($team2) ?>
+                            </span>
                         </div>
 
-                        <span class="upcoming__date"><?= htmlspecialchars($m['date']) ?></span>
-                        <a href="#" class="btn btn--xs">Prédire</a>
+                        <span class="upcoming__date"><?= $date ?></span>
+
+                        <a href="#" class="btn btn--xs">Voir</a>
                     </div>
                 <?php endforeach; ?>
             </div>
