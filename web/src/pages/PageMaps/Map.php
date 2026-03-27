@@ -10,6 +10,7 @@ require_once '../../components/ComponentCardMaps/cardMaps.php';
     <title>Ma Page avec les Cartes</title>
     <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
     <link rel="stylesheet" href="../../components/ComponentCardMaps/cardMaps.css">
+    <link rel="stylesheet" href="../../components/ComponentFooter/footer.css">
     <link rel="stylesheet" href="Map.css">
 </head>
 
@@ -82,6 +83,7 @@ require_once '../../components/ComponentCardMaps/cardMaps.php';
         </div>
     </div>
 
+    <?php include '../../components/ComponentFooter/footer.php'; ?>
 </body>
 
 </html>

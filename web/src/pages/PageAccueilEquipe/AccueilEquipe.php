@@ -76,7 +76,6 @@ function renderTeamCard($team)
 
 <head>
     <meta charset="UTF-8">
-    <title>CS2 - Équipes</title>
 
     <link rel="stylesheet" href="../../style.css">
     <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
@@ -87,6 +86,11 @@ function renderTeamCard($team)
 <body>
 
     <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
+
+    <div class="header-section">
+        <h1>Equipe CS2</h1>
+        <a href="FormulaireEquipe.php" class="btn-add-map">+ Nouvelle Equipe</a>
+    </div>
 
     <form method="GET" class="filters">
         <input type="text" name="search" placeholder="Rechercher une équipe..." class="search-bar"

@@ -2,6 +2,18 @@ body {
     background-color: #f0f2f5;
 }
 
+h1 {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--clr-bg);
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-decoration-color: var(--clr-accent);
+    text-underline-offset: 8px;
+}
+
 .filters {
     display: flex;
     gap: 10px;
@@ -63,6 +75,7 @@ body {
 .btn-add-map {
     background: var(--clr-accent);
     color: #000;
+    margin-top: 40px;
     padding: 12px 24px;
     border-radius: 6px;
     font-weight: bold;
