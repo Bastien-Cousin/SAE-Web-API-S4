@@ -105,3 +105,28 @@
     content: " ▼";
     font-size: 12px;
 }
+
+.connected {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: 200px;
+}
+
+.connected button {
+    background-color: #fca311;
+    color: #1b265c;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s all ease;
+}
+
+.connected button:hover {
+    background-color: #e59400;
+    transform: scale(1.05);
+}

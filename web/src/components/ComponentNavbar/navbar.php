@@ -38,10 +38,19 @@
             </li>
         </ul>
     </div>
-    <div class="auth_logo">
-        <a href="/pages/PageConnexionInscription/Connexion.php">
-            <img src="https://i.postimg.cc/mryDpGRm/login.png" alt="S'authentifier">
-        </a>
-    </div>
+    <?php if (isset($_SESSION['user'])): ?>
+        <div class="connected">
+            <span>Bonjour, <?= htmlspecialchars($_SESSION["user"]["username"]) ?></span>
+            <a href="components/ComponentNavbar/logout.php">
+                <button>Se déconnecter</button>
+            </a>
+         </div>
+    <?php else: ?>
+        <div class="auth_logo">
+            <a href="/pages/PageConnexionInscription/Connexion.php">
+                <img src="https://i.postimg.cc/mryDpGRm/login.png" alt="S'authentifier">
+            </a>
+        </div>
+    <?php endif; ?>
 </nav>
 

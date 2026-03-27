@@ -1,4 +1,4 @@
-import type {NextFunction, Request, Response} from 'express'
+import type { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 
 // Étendre le type Request pour ajouter userId
@@ -38,7 +38,7 @@ declare global {
  * @example
  * // Utilisation dans une route protégée
  * router.get('/api/protected', authenticateToken, (req, res) => {\n *   // req.user est maintenant disponible et contient { userId, email }\n *   console.log(req.user.userId) // 123\n *   console.log(req.user.email)  // 'user@example.com'\n * })\n * \n * @example\n * // Format du header Authorization requis\n * // Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQ...\n * \n * @example\n * // Contenu du token décodé (payload)\n * // {\n * //   userId: 123,\n * //   email: 'user@example.com',\n * //   iat: 1702389600,\n * //   exp: 1703080800\n * // }\n */
-export const authenticateToken = (   
+export const authenticateToken = (
     req: Request,
     res: Response,
     next: NextFunction,
@@ -48,7 +48,7 @@ export const authenticateToken = (
     const token = authHeader && authHeader.split(' ')[1] // Format: "Bearer TOKEN"
 
     if (!token) {
-        return res.status(401).json({error: 'Token manquant'})
+        return res.status(401).json({ error: 'Token manquant' })
     }
 
     try {
@@ -74,6 +74,6 @@ export const authenticateToken = (
         // - La signature est invalide
         // - Le token a expiré
         // - Le token est malformé
-        return res.status(401).json({error: 'Token invalide ou expiré'})
+        return res.status(401).json({ error: 'Token invalide ou expiré' })
     }
 }
