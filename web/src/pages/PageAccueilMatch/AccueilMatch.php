@@ -15,7 +15,6 @@
 
     <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
 
-    <!-- 🔍 FILTRES -->
     <form method="GET" class="filters">
         <input type="text" name="search" placeholder="Rechercher une équipe..." class="search-bar"
             value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
@@ -34,7 +33,7 @@
         <select name="score" class="filter-btn">
             <option value="">Tous les scores</option>
             <?php
-            $scores = ["3-0", "3-1", "3-2", "2-0", "2-1", "2-2", "2-3", "1-2", "1-3", "0-2", "0-3"];
+            $scores = ["3-0", "3-1", "3-2", "2-0", "2-1", "2-3", "1-2", "1-3", "0-2", "0-3"];
             foreach ($scores as $s) {
                 $selected = (($_GET['score'] ?? '') === $s) ? 'selected' : '';
                 echo "<option value=\"$s\" $selected>$s</option>";
@@ -50,9 +49,6 @@
     <?php include __DIR__ . '/../../components/componentMatchBar/matchBar.php'; ?>
 
     <?php
-    /* ============================
-       🔌 CONNEXION DB
-    ============================ */
     $pdo = new PDO(
         "pgsql:host=" . (getenv('POSTGRES_HOST') ?: 'db') .
         ";port=" . (getenv('POSTGRES_PORT') ?: '5432') .
@@ -61,10 +57,6 @@
         getenv('POSTGRES_PASSWORD') ?: 'sae_password',
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
-
-    /* ============================
-       🧠 UTILS
-    ============================ */
 
     function decodeJson($data)
     {
@@ -129,17 +121,11 @@
         return "$t1-$t2";
     }
 
-    /* ============================
-       📥 FILTRES
-    ============================ */
     $search = $_GET['search'] ?? '';
     $mapsFilter = $_GET['maps'] ?? '';
     $scoreFilter = $_GET['score'] ?? '';
     $dateFilter = $_GET['date'] ?? '';
 
-    /* ============================
-       📦 REQUÊTE SQL
-    ============================ */
     $sql = "
 SELECT m.*, 
 t1.name AS team1_name, t1.logo AS team1_logo, t1.logourl AS team1_logourl, t1.textlesslogourl AS team1_textlesslogourl,
@@ -168,9 +154,6 @@ WHERE 1=1
     $stmt->execute($params);
     $matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    /* ============================
-       🔎 FILTRES PHP
-    ============================ */
     $matches = array_filter($matches, function ($match) use ($search, $scoreFilter) {
 
         list($team1, $team2) = extractTeams($match);
@@ -194,7 +177,6 @@ WHERE 1=1
     });
     ?>
 
-    <!-- 🎨 AFFICHAGE -->
     <div class="matches">
         <?php
         if (empty($matches)) {
