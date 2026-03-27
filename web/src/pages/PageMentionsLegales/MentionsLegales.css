@@ -1,0 +1,48 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 40px;
+    line-height: 1.6;
+    background-color: #f9f9f9;
+}
+
+#bouton-retour {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    text-decoration: none;
+    color: black;
+    border-bottom: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+    padding: 20px 25px;
+    border-bottom-right-radius: 10px;
+}
+
+#bouton-retour:hover {
+    border-bottom: 1px solid black;
+    border-right: 1px solid black;
+    background-color: #ccc;
+    transition: all 0.3s ease;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+h2 {
+    margin-top: 25px;
+    color: #333;
+}
+
+p {
+    margin-bottom: 15px;
+}
+
+a {
+    color: #007BFF;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
