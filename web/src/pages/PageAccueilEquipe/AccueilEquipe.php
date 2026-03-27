@@ -1,58 +1,62 @@
 <?php
+// Récupérer les paramètres de filtrage
+$search = $_GET['search'] ?? '';
+$country = $_GET['country'] ?? '';
+$sort = $_GET['sort'] ?? 'name_asc';
+
+// Connexion à la base de données
 $host = getenv('POSTGRES_HOST') ?: 'db';
 $port = getenv('POSTGRES_PORT') ?: '5432';
 $dbname = getenv('POSTGRES_DB') ?: 'sae_db';
 $user = getenv('POSTGRES_USER') ?: 'sae_user';
 $password = getenv('POSTGRES_PASSWORD') ?: 'sae_password';
 
+$teams = [];
+$regions = [];
+
 try {
     $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Récupérer toutes les équipes
+    $stmt = $pdo->prepare("SELECT * FROM team ORDER BY name ASC");
+    $stmt->execute();
+    $allTeams = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Extraire les régions uniques
+    $regionsSet = array_unique(array_column($allTeams, 'region'));
+    $regions = array_values(array_filter($regionsSet));
+    sort($regions);
+    
+    // Filtrer les équipes
+    $teams = array_filter($allTeams, function ($team) use ($search, $country) {
+        if (!empty($search) && stripos($team['name'] ?? '', $search) === false) {
+            return false;
+        }
+        if (!empty($country) && ($team['region'] ?? '') !== $country) {
+            return false;
+        }
+        return true;
+    });
+    
+    // Trier les équipes selon le paramètre
+    usort($teams, function ($a, $b) use ($sort) {
+        switch ($sort) {
+            case 'name_asc':
+                return strcasecmp($a['name'] ?? '', $b['name'] ?? '');
+            case 'name_desc':
+                return strcasecmp($b['name'] ?? '', $a['name'] ?? '');
+            default:
+                return strcasecmp($a['name'] ?? '', $b['name'] ?? '');
+        }
+    });
 } catch (PDOException $e) {
-    die("❌ Erreur de connexion à la base de données : " . $e->getMessage());
+    die("❌ Erreur de connexion à la base de données : " . htmlspecialchars($e->getMessage()));
 }
-
-$search = $_GET['search'] ?? '';
-$country = $_GET['country'] ?? '';
-$sort = $_GET['sort'] ?? 'name_asc';
-
-$stmtRegions = $pdo->query("SELECT DISTINCT region FROM team ORDER BY region ASC");
-$regions = $stmtRegions->fetchAll(PDO::FETCH_COLUMN);
-
-$sql = "SELECT pageid, name, logo, logourl, textlesslogourl, objectname, region 
-        FROM team 
-        WHERE 1=1";
-
-$params = [];
-
-if ($search !== '') {
-    $sql .= " AND name ILIKE :search";
-    $params[':search'] = "%$search%";
-}
-
-if ($country !== '') {
-    $sql .= " AND region = :country";
-    $params[':country'] = $country;
-}
-
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-usort($teams, function ($a, $b) use ($sort) {
-    switch ($sort) {
-        case 'name_asc':
-            return strcasecmp($a['name'], $b['name']);
-        case 'name_desc':
-            return strcasecmp($b['name'], $a['name']);
-        default:
-            return strcasecmp($a['name'], $b['name']);
-    }
-});
 
 function renderTeamCard($team)
 {
-    $logo = $team['textlesslogourl'] ?? $team['logourl'] ?? '';
+    $logo = $team['logourl'] ?? $team['textlesslogourl'] ?? '';
 
     if (empty($logo)) {
         $logo = "../../img/ImagesDivers/placeholder.jpg";

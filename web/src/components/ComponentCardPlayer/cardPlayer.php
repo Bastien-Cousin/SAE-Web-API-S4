@@ -13,10 +13,8 @@ function afficherCarteJoueur(array $joueur): void
     ?>
     <div class="player-card" style="--card-color: <?= $couleur ?>;">
 
-        <div class="card-logo">
-            <?php if (!empty($logo)): ?>
-                <img src="<?= $logo ?>" alt="Logo équipe">
-            <?php else: ?>
+        <div class="card-logo" style="<?= !empty($logo) ? "background-image: url('$logo');" : '' ?>">
+            <?php if (empty($logo)): ?>
                 <div class="logo-placeholder">?</div>
             <?php endif; ?>
         </div>

@@ -25,22 +25,24 @@ $offset = ($page - 1) * $limit;
 $stmtRegions = $pdo->query("SELECT DISTINCT region FROM player ORDER BY region ASC");
 $regions = $stmtRegions->fetchAll(PDO::FETCH_COLUMN);
 
-$sql = "SELECT pageid, objectname, name, birthdate, status, type, earnings, nationality, region 
-        FROM player WHERE 1=1";
+$sql = "SELECT p.pageid, p.objectname, p.name, p.birthdate, p.status, p.type, p.earnings, p.nationality, p.region, p.teampagename, t.logourl, t.textlesslogourl
+        FROM player p
+        LEFT JOIN team t ON LOWER(REPLACE(REPLACE(p.teampagename, '_', ' '), '-', '')) = LOWER(REPLACE(REPLACE(SUBSTRING(t.objectname FROM POSITION('_team_' IN t.objectname) + 6), '_', ' '), '-', ''))
+        WHERE 1=1";
 
 $params = [];
 
 if ($search !== '') {
-    $sql .= " AND (name ILIKE :search OR objectname ILIKE :search)";
+    $sql .= " AND (p.name ILIKE :search OR p.objectname ILIKE :search)";
     $params[':search'] = "%$search%";
 }
 
 if ($region !== '') {
-    $sql .= " AND region = :region";
+    $sql .= " AND p.region = :region";
     $params[':region'] = $region;
 }
 
-$sql .= " ORDER BY name ASC LIMIT :limit OFFSET :offset";
+$sql .= " ORDER BY p.name ASC LIMIT :limit OFFSET :offset";
 
 $stmt = $pdo->prepare($sql);
 
@@ -98,7 +100,7 @@ $joueurs = array_map(function ($player) {
         'statut' => $player['status'] ?? 'Actif',
         'role' => $player['type'] ?? 'N/A',
         'argent_gagne' => isset($player['earnings']) ? number_format($player['earnings']) . ' €' : 'N/A',
-        'logo' => '',
+        'logo' => $player['logourl'] ?? $player['textlesslogourl'] ?? '',
         'couleur_logo' => '#cccccc',
     ];
 }, $playersData);
