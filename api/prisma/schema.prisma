@@ -279,3 +279,15 @@ model prediction_game {
     @@unique([prediction_id, game_number])
     @@map("prediction_game")
 }
+
+// Modèle Map (Maps CS2)
+model map {
+    id               Int      @id @default(autoincrement())
+    name             String   @unique
+    competition_date String?
+    image_url        String?
+    created_at       DateTime @default(now())
+    updated_at       DateTime @updatedAt
+
+    @@map("map")
+}

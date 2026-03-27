@@ -55,6 +55,18 @@ function getMapCounts($pdo)
     return $mapCounts;
 }
 
+function getCustomMaps($pdo)
+{
+    $customMaps = [];
+    try {
+        $stmt = $pdo->query('SELECT id, name, competition_date, image_url, created_at, updated_at FROM map ORDER BY name');
+        $customMaps = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Erreur lors de la récupération des maps personnalisées : " . $e->getMessage());
+    }
+    return $customMaps;
+}
+
 $host = getenv('POSTGRES_HOST') ?: 'db';
 $port = getenv('POSTGRES_PORT') ?: '5432';
 $dbname = getenv('POSTGRES_DB') ?: 'sae_db';
@@ -79,8 +91,10 @@ try {
     $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $mapCounts = getMapCounts($pdo);
+    $customMaps = getCustomMaps($pdo);
 } catch (PDOException $e) {
     error_log("Erreur de connexion à la base de données : " . $e->getMessage());
+    $customMaps = [];
 }
 ?>
 <!DOCTYPE html>
@@ -172,6 +186,17 @@ try {
                 'https://i.postimg.cc/q7ffw5gZ/800px-CS2-Italy-CT-Spawn.jpg',
                 $mapCounts['Italy']
             ); ?>
+
+            <?php if (!empty($customMaps)): ?>
+                <?php foreach ($customMaps as $map): ?>
+                    <?php echo createMapCard(
+                        $map['name'],
+                        $map['competition_date'],
+                        $map['image_url'] ?: 'https://i.postimg.cc/52DJGtkW/image-2026-03-26-151546491.png',
+                        0 // Les maps personnalisées n'ont pas encore été jouées
+                    ); ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
         <div class="stats-section">
             <h2 class="stats-title">Statistiques</h2>
