@@ -87,6 +87,7 @@ interface tournament {
     format?: string
     sponsors?: string
     extradata?: Record<string, any>
+    wiki?: string;
 }
 
 // Interface pour les paramètres de pagination
@@ -110,9 +111,9 @@ async function updateTournaments(): Promise<void> {
     console.log('='.repeat(60))
 
     const tournamentsData: tournament[] = []
-    const params: any = {
+    const params: PaginationParams = {
         wiki: 'counterstrike',
-        conditions: '[[liquipediatier::1]] AND [[date::>2025-01-01]]',
+        conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]]) AND [[startdate::>2020-01-01]]',
         limit: 100,
         offset: 0,
     }
@@ -225,7 +226,7 @@ async function updateTournaments(): Promise<void> {
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 
                 $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, 
-                $39, $40, $41, $42
+                $39, $40, $41
             ) ON CONFLICT (pageid) DO NOTHING;
           `
 
