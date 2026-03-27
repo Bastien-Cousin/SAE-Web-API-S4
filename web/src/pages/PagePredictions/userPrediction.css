@@ -1,0 +1,191 @@
+/* ─── Carte principale ─── */
+.section-title{
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.9rem;
+    opacity: 0.6;
+    margin-bottom: 2rem;
+}
+.recap-card {
+    max-width: 700px;
+    margin: 2rem auto;
+    background: rgba(30, 30, 30, 0.85);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Titre de section */
+.recap-title {
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.9rem;
+    opacity: 0.6;
+    margin-bottom: 2rem;
+}
+
+/* ─── Matchup ─── */
+.recap-matchup {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.recap-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.recap-team .team-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.recap-team .wr-pill {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.recap-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.vs-text {
+    font-size: 1.8rem;
+    font-weight: 900;
+    opacity: 0.35;
+}
+
+.bo-pill {
+    background: #4f8ef7;
+    color: #fff;
+    font-weight: 700;
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+}
+
+.time-pill {
+    font-size: 0.85rem;
+    opacity: 0.6;
+}
+
+/* ─── Tableau Maps ─── */
+.maps-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.maps-table th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.6;
+    padding: 0.6rem;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.maps-table td {
+    padding: 0.65rem;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.maps-table td.map-name {
+    font-weight: 600;
+    text-align: left;
+}
+
+.maps-table td.score {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.score-t1 { color: #4f8ef7; }
+.score-t2 { color: #f74f6a; }
+
+.maps-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.maps-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ─── Inputs en mode édition ─── */
+input[type=text], input[type=number], input[type=time] {
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+    font-size: 0.95rem;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border 0.2s, background 0.2s;
+}
+
+input[type=text]:focus,
+input[type=number]:focus,
+input[type=time]:focus {
+    outline: none;
+    border-color: #4f8ef7;
+    background: rgba(255,255,255,0.1);
+}
+
+/* ─── Actions ─── */
+.recap-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn-back,
+.btn-confirm {
+    padding: 0.7rem 1.8rem;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-back {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.btn-back:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.btn-confirm {
+    background: #4f8ef7;
+    color: #fff;
+}
+
+.btn-confirm:hover {
+    background: #3578e5;
+}
