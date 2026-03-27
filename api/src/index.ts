@@ -8,6 +8,8 @@ import { prisma } from './client.js'
 import teamsRouter from './routes/teams.js'
 import playersRouter from './routes/players.js'
 import matchesRouter from './routes/matches.js'
+import tournamentsRouter from './routes/tournaments.js'
+import predictionsRouter from './routes/predictions.js'
 import { authRouter } from './auth.route.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -74,6 +76,8 @@ app.use(authRouter);
 app.use('/api/teams', teamsRouter)
 app.use('/api/players', playersRouter)
 app.use('/api/matches', matchesRouter)
+app.use('/api/tournaments', tournamentsRouter)
+app.use('/api/predictions', predictionsRouter)
 
 // Root endpoint
 app.get('/api', (req: Request, res: Response) => {
@@ -84,6 +88,8 @@ app.get('/api', (req: Request, res: Response) => {
       teams: '/api/teams',
       players: '/api/players',
       matches: '/api/matches',
+      tournaments: '/api/tournaments',
+      predictions: '/api/predictions',
     },
   })
 })

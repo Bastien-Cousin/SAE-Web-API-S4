@@ -18,10 +18,11 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:setup": "npm run db:push && npm run db:seed",
-    "import:teams": "npx tsx ./src/import_matches/equipes_cs.ts",
-    "import:players": "npx tsx ./src/import_matches/joueurs_cs.ts",
-    "import:matches": "npx tsx ./src/import_matches/matchs_cs.ts",
-    "import:all": "npm run import:teams && npm run import:players && npm run import:matches",
+    "import:teams": "npx tsx ./src/import_donnees/equipes_cs.ts",
+    "import:players": "npx tsx ./src/import_donnees/joueurs_cs.ts",
+    "import:matches": "npx tsx ./src/import_donnees/matchs_cs.ts",
+    "import:tournament": "npx tsx ./src/import_donnees/tournois_cs.ts",
+    "import:all": "npm run import:teams && npm run import:players && npm run import:matches && npm run import:tournament",
     "setup": "npm run db:setup && npm run import:all"
   },
   "prisma": {

@@ -131,6 +131,7 @@ model match {
     team2        team?         @relation("team2matches", fields: [team2_id], references: [pageid])
     matchteams   matchteam[]
     matchplayers matchplayer[]
+    predictions  prediction[]
 
     @@index([team1_id])
     @@index([team2_id])
@@ -164,12 +165,117 @@ model matchplayer {
     @@map("matchplayer")
 }
 
+// Modèle Tournament (Tournois)
+model tournament {
+    pageid             BigInt    @id
+    pagename           String?
+    namespace          Int?
+    objectname         String    @unique
+    name               String?
+    shortname          String?
+    tickername         String?
+    banner             String?
+    bannerurl          String?
+    bannerdark         String?
+    bannerdarkurl      String?
+    icon               String?
+    iconurl            String?
+    icondark           String?
+    icondarkurl        String?
+    seriespage         String?
+    serieslist         Json?
+    previous           String?
+    previous2          String?
+    next               String?
+    next2              String?
+    game               String?
+    mode               String?
+    patch              String?
+    endpatch           String?
+    type               String?
+    organizers         String?
+    startdate          DateTime? @db.Date
+    enddate            DateTime? @db.Date
+    sortdate           DateTime? @db.Date
+    locations          Json?
+    prizepool          BigInt?
+    participantsnumber Int?
+    liquipediatier     String?
+    liquipediatiertype String?
+    publishertier      String?
+    status             String?
+    maps               String?
+    format             String?
+    sponsors           String?
+    extradata          Json?
+    wiki               String?
+
+    @@map("tournament")
+}
+
 // Modèle User pour gérer les utilisateurs et l'authentification
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    id        Int      @id @default(autoincrement())
+    username  String   @unique
+    email     String   @unique
+    password  String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relations
+    predictions prediction[]
+
+    @@map("user")
+}
+
+// Modèle Prediction - Prédictions de matchs par utilisateurs
+model prediction {
+    id       Int    @id @default(autoincrement())
+    user_id  Int
+    match_id BigInt
+
+    // Prédiction du vainqueur du match (1 ou 2)
+    predicted_winner Int
+
+    // Confiance de la prédiction (0-100%)
+    confidence Int?
+
+    // Relations
+    user             User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+    match            match             @relation(fields: [match_id], references: [pageid], onDelete: Cascade)
+    prediction_games prediction_game[]
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    @@unique([user_id, match_id])
+    @@index([user_id])
+    @@index([match_id])
+    @@map("prediction")
+}
+
+// Modèle Prediction_Game - Détails des 5 jeux possibles dans une prédiction
+model prediction_game {
+    id            Int @id @default(autoincrement())
+    prediction_id Int
+    game_number   Int // 1, 2, 3, 4, 5
+
+    // Map du jeu
+    map String? // "Inferno", "Dust2", "Mirage", "Nuke", "Vertigo", "Ancient", "Anubis"
+
+    // Scores prédits pour chaque équipe
+    team1_score Int? // Score team1 (ex: 16)
+    team2_score Int? // Score team2 (ex: 14)
+
+    // Qui gagne ce jeu (1 ou 2)
+    predicted_winner Int?
+
+    // Relation
+    prediction prediction @relation(fields: [prediction_id], references: [id], onDelete: Cascade)
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    @@unique([prediction_id, game_number])
+    @@map("prediction_game")
 }

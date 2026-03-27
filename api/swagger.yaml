@@ -28,6 +28,10 @@ tags:
     description: Opérations sur les joueurs
   - name: Matches
     description: Opérations sur les matchs
+  - name: Tournaments
+    description: Opérations sur les tournois
+  - name: Predictions
+    description: Opérations sur les prédictions de matchs
 
 paths:
   /health:
@@ -566,6 +570,419 @@ paths:
                 items:
                   $ref: '#/components/schemas/Match'
 
+  /tournaments:
+    get:
+      tags:
+        - Tournaments
+      summary: Récupérer tous les tournois
+      description: Retourne la liste paginée de tous les tournois
+      operationId: getAllTournaments
+      parameters:
+        - name: skip
+          in: query
+          description: Nombre de tournois à sauter (pagination)
+          schema:
+            type: integer
+            default: 0
+        - name: take
+          in: query
+          description: Nombre de tournois à retourner
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Liste des tournois
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tournament'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      skip:
+                        type: integer
+                      take:
+                        type: integer
+
+  /tournaments/search:
+    get:
+      tags:
+        - Tournaments
+      summary: Rechercher des tournois
+      description: Recherche des tournois par nom ou identifiant
+      operationId: searchTournaments
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Termes de recherche
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Résultats de recherche
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tournament'
+
+  /tournaments/year/{year}:
+    get:
+      tags:
+        - Tournaments
+      summary: Récupérer les tournois par année
+      description: Retourne tous les tournois d'une année spécifique
+      operationId: getTournamentsByYear
+      parameters:
+        - name: year
+          in: path
+          required: true
+          description: Année (YYYY)
+          schema:
+            type: string
+            example: "2024"
+      responses:
+        '200':
+          description: Tournois de l'année
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tournament'
+
+  /tournaments/{id}:
+    get:
+      tags:
+        - Tournaments
+      summary: Récupérer un tournoi par ID
+      description: Retourne les détails d'un tournoi spécifique
+      operationId: getTournamentById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID du tournoi (pageid)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Détails du tournoi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tournament'
+        '404':
+          description: Tournoi non trouvé
+
+  /tournaments/stats/{id}:
+    get:
+      tags:
+        - Tournaments
+      summary: Récupérer les statistiques d'un tournoi
+      description: Retourne les statistiques (matchs, équipes, joueurs) d'un tournoi
+      operationId: getTournamentStats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID du tournoi (pageid)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Statistiques du tournoi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Tournament'
+                  - type: object
+                    properties:
+                      stats:
+                        type: object
+                        properties:
+                          totalMatches:
+                            type: integer
+                          totalTeams:
+                            type: integer
+                          totalPlayers:
+                            type: integer
+
+  /predictions:
+    post:
+      tags:
+        - Predictions
+      summary: Créer une nouvelle prédiction
+      description: Crée une prédiction pour un match avec jusqu'à 5 jeux
+      operationId: createPrediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - match_id
+                - predicted_winner
+                - games
+              properties:
+                user_id:
+                  type: integer
+                  example: 1
+                match_id:
+                  type: string
+                  format: bigint
+                  example: "123456789"
+                predicted_winner:
+                  type: integer
+                  enum: [1, 2]
+                  example: 1
+                confidence:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                  nullable: true
+                  example: 85
+                games:
+                  type: array
+                  minItems: 5
+                  maxItems: 5
+                  items:
+                    type: object
+                    properties:
+                      game_number:
+                        type: integer
+                        enum: [1, 2, 3, 4, 5]
+                      map:
+                        type: string
+                        nullable: true
+                        example: "Inferno"
+                      team1_score:
+                        type: integer
+                        nullable: true
+                        example: 16
+                      team2_score:
+                        type: integer
+                        nullable: true
+                        example: 14
+                      predicted_winner:
+                        type: integer
+                        enum: [1, 2]
+                        nullable: true
+                        example: 1
+      responses:
+        '201':
+          description: Prédiction créée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+        '400':
+          description: Données invalides ou manquantes
+        '409':
+          description: Prédiction déjà existante pour ce match
+        '500':
+          description: Erreur serveur
+
+    get:
+      tags:
+        - Predictions
+      summary: Récupérer les prédictions avec pagination
+      operationId: getPredictions
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: take
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Liste des prédictions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Prediction'
+        '500':
+          description: Erreur serveur
+
+  /predictions/{id}:
+    get:
+      tags:
+        - Predictions
+      summary: Récupérer une prédiction par ID
+      operationId: getPredictionById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Prédiction trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+        '400':
+          description: ID invalide
+        '404':
+          description: Prédiction non trouvée
+        '500':
+          description: Erreur serveur
+
+    patch:
+      tags:
+        - Predictions
+      summary: Mettre à jour une prédiction
+      operationId: updatePrediction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                predicted_winner:
+                  type: integer
+                  enum: [1, 2]
+                confidence:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                  nullable: true
+                games:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      game_number:
+                        type: integer
+                      map:
+                        type: string
+                        nullable: true
+                      team1_score:
+                        type: integer
+                        nullable: true
+                      team2_score:
+                        type: integer
+                        nullable: true
+                      predicted_winner:
+                        type: integer
+                        nullable: true
+      responses:
+        '200':
+          description: Prédiction mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+        '400':
+          description: ID invalide
+        '404':
+          description: Prédiction non trouvée
+        '500':
+          description: Erreur serveur
+
+    delete:
+      tags:
+        - Predictions
+      summary: Supprimer une prédiction
+      operationId: deletePrediction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Prédiction supprimée
+        '400':
+          description: ID invalide
+        '404':
+          description: Prédiction non trouvée
+        '500':
+          description: Erreur serveur
+
+  /predictions/user/{userId}:
+    get:
+      tags:
+        - Predictions
+      summary: Récupérer les prédictions d'un utilisateur
+      operationId: getPredictionsByUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Liste des prédictions de l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Prediction'
+        '400':
+          description: ID utilisateur invalide
+        '500':
+          description: Erreur serveur
+
+  /predictions/match/{matchId}:
+    get:
+      tags:
+        - Predictions
+      summary: Récupérer les prédictions pour un match
+      operationId: getPredictionsByMatch
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: bigint
+      responses:
+        '200':
+          description: Liste des prédictions pour le match
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Prediction'
+        '400':
+          description: ID match invalide
+        '500':
+          description: Erreur serveur
+
 components:
   schemas:
     Team:
@@ -702,6 +1119,96 @@ components:
           format: uri
           nullable: true
           description: Lien vers la vidéo du match
+
+    Tournament:
+      type: object
+      properties:
+        pageid:
+          type: string
+          format: bigint
+          example: "1000"
+        pagename:
+          type: string
+          nullable: true
+        objectname:
+          type: string
+          example: The International 2024
+        name:
+          type: string
+          nullable: true
+          example: The International 2024
+        shortname:
+          type: string
+          nullable: true
+          example: TI10
+        tickername:
+          type: string
+          nullable: true
+        banner:
+          type: string
+          nullable: true
+        bannerurl:
+          type: string
+          format: uri
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+        iconurl:
+          type: string
+          format: uri
+          nullable: true
+        type:
+          type: string
+          nullable: true
+          example: Invitational
+        game:
+          type: string
+          nullable: true
+          example: Counter-Strike 2
+        mode:
+          type: string
+          nullable: true
+          example: "5v5"
+        startdate:
+          type: string
+          format: date
+          nullable: true
+        enddate:
+          type: string
+          format: date
+          nullable: true
+        prizepool:
+          type: integer
+          format: int64
+          nullable: true
+          example: 5000000
+        participantsnumber:
+          type: integer
+          nullable: true
+          example: 16
+        status:
+          type: string
+          nullable: true
+          example: Finished
+        liquipediatier:
+          type: string
+          nullable: true
+          example: S-Tier
+        organizers:
+          type: string
+          nullable: true
+        locations:
+          type: object
+          nullable: true
+          description: Lieu d'organisation
+        format:
+          type: string
+          nullable: true
+          example: Double Elimination
+        sponsors:
+          type: string
+          nullable: true
         stream:
           type: object
           nullable: true
@@ -720,6 +1227,99 @@ components:
           type: string
           format: email
           example: john.doe@example.com
+
+    Prediction:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        match_id:
+          type: string
+          format: bigint
+          example: "123456789"
+        predicted_winner:
+          type: integer
+          enum: [1, 2]
+          example: 1
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          example: 85
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-27T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-03-27T10:30:00Z"
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            username:
+              type: string
+        match:
+          type: object
+          properties:
+            pageid:
+              type: string
+              format: bigint
+            objectname:
+              type: string
+            date:
+              type: string
+              format: date-time
+        prediction_games:
+          type: array
+          items:
+            $ref: '#/components/schemas/PredictionGame'
+
+    PredictionGame:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        prediction_id:
+          type: integer
+          example: 1
+        game_number:
+          type: integer
+          enum: [1, 2, 3, 4, 5]
+          example: 1
+        map:
+          type: string
+          nullable: true
+          example: "Inferno"
+        team1_score:
+          type: integer
+          nullable: true
+          example: 16
+        team2_score:
+          type: integer
+          nullable: true
+          example: 14
+        predicted_winner:
+          type: integer
+          enum: [1, 2]
+          nullable: true
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-27T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-03-27T10:30:00Z"
 
   securitySchemes:
     BearerAuth:
