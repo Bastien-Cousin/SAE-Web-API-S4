@@ -1,17 +1,16 @@
 /* Container des cartes */
 .teams {
     display: grid;
-    grid-template-columns: repeat(4, 1fr); /* 4 colonnes égales */
-    gap: 30px;                             /* Espace entre les cartes */
-    justify-items: center;                 /* Centre chaque carte dans sa cellule */
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+    justify-items: center;
     margin: 20px;
 }
 
-/* === Cartes d'équipe === */
 .team-card {
     width: 175px;
     background-color: #fff;
-    border: 2px solid #000;
+    border: 2px solid #1e3a8a;
     border-radius: 10px;
     padding: 15px;
     text-align: center;
