@@ -1,3 +1,5 @@
+<?php session_start(); ?>
+
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -16,9 +18,10 @@
 
     <section class="hero">
         <div class="container hero__content">
-            <h1 class="hero__title">Bienvenue sur CS2 - Projet</h1>
+            <h1 class="hero__title">Bienvenue sur Counter Data</h1>
             <p class="hero__subtitle">
-                Votre source ultime pour les données, analyses et prédictions du monde compétitif de Counter-Strike 2.
+                Retrouvez l'intégralité des statistiques concernant les équipes, les joueurs et les matchs de la scène
+                professionnelle Counter-Strike 2.
             </p>
         </div>
     </section>
@@ -26,11 +29,40 @@
     <div class="statsband">
         <div class="statsband__inner">
             <?php
+            $players_count = 'XX';
+            $teams_count = 'XX';
+            $tournaments_count = 'XX';
+
+            $host = getenv('POSTGRES_HOST') ?: 'db';
+            $port = getenv('POSTGRES_PORT') ?: '5432';
+            $dbname = getenv('POSTGRES_DB') ?: 'sae_db';
+            $user = getenv('POSTGRES_USER') ?: 'sae_user';
+            $password = getenv('POSTGRES_PASSWORD') ?: 'sae_password';
+
+            try {
+                $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password);
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+                $stmt_players = $pdo->query('SELECT COUNT(*) as count FROM player');
+                $result_players = $stmt_players->fetch(PDO::FETCH_ASSOC);
+                $players_count = $result_players['count'] ?? 'XX';
+
+                $stmt_teams = $pdo->query('SELECT COUNT(*) as count FROM team');
+                $result_teams = $stmt_teams->fetch(PDO::FETCH_ASSOC);
+                $teams_count = $result_teams['count'] ?? 'XX';
+
+                $stmt_tournaments = $pdo->query('SELECT COUNT(*) as count FROM tournament');
+                $result_tournaments = $stmt_tournaments->fetch(PDO::FETCH_ASSOC);
+                $tournaments_count = $result_tournaments['count'] ?? 'XX';
+            } catch (PDOException $e) {
+                error_log("Erreur stats : " . $e->getMessage());
+            }
+
             $stats = [
-                ['value' => 'XX', 'label' => 'Joueurs'],
-                ['value' => 'XX', 'label' => 'Equipes'],
-                ['value' => 'XX', 'label' => 'Maps'],
-                ['value' => 'XX', 'label' => 'Tournois'],
+                ['value' => $players_count, 'label' => 'Joueurs'],
+                ['value' => $teams_count, 'label' => 'Equipes'],
+                ['value' => '11', 'label' => 'Maps'],
+                ['value' => $tournaments_count, 'label' => 'Tournois'],
             ];
             foreach ($stats as $s): ?>
                 <div class="statsband__item">
