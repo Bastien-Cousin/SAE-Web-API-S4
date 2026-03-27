@@ -124,7 +124,7 @@ $joueurs = array_map(function ($player) {
     <div class="page-header">
         <div class="header-section">
             <h1>Joueurs CS2</h1>
-            <a href="FormulaireJoueur.php" class="btn-add-map">+ Nouvelle Joueur</a>
+            <a href="FormulaireJoueur.php" class="btn-add-map">+ Nouveau Joueur</a>
         </div>
     </div>
 

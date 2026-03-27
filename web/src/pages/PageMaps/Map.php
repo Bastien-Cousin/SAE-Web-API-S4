@@ -172,11 +172,96 @@ try {
                 'https://i.postimg.cc/q7ffw5gZ/800px-CS2-Italy-CT-Spawn.jpg',
                 $mapCounts['Italy']
             ); ?>
-
+        </div>
+        <div class="stats-section">
+            <h2 class="stats-title">Statistiques</h2>
+            <p class="stats-subtitle">Répartition des maps jouées</p>
+            <div class="chart-wrapper">
+                <div class="chart-legend">
+                    <?php
+                    $mapColors = [
+                        'Ancient' => '#4a7c4e',
+                        'Anubis' => '#c9a84c',
+                        'Dust II' => '#c8a96e',
+                        'Inferno' => '#c0522a',
+                        'Mirage' => '#d4a844',
+                        'Nuke' => '#7a9bb5',
+                        'Overpass' => '#6b8f5e',
+                        'Train' => '#8a7f72',
+                        'Vertigo' => '#4a6fa5',
+                        'Office' => '#7a9e7e',
+                        'Italy' => '#e8b84b',
+                    ];
+                    $total = array_sum($mapCounts);
+                    foreach ($mapCounts as $name => $count) {
+                        $pct = $total > 0 ? round(($count / $total) * 100, 1) : 0;
+                        $color = $mapColors[$name] ?? '#aaaaaa';
+                        echo '<span class="legend-item">
+        <span class="legend-dot" style="background:' . $color . '"></span>
+        ' . htmlspecialchars($name) . ' &mdash; ' . $pct . '%
+    </span>';
+                    }
+                    ?>
+                    <canvas id="mapsChart"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 
     <?php include '../../components/ComponentFooter/footer.php'; ?>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script>
+        const mapData = <?php echo json_encode($mapCounts); ?>;
+
+        const labels = Object.keys(mapData);
+        const values = Object.values(mapData);
+        const total = values.reduce((a, b) => a + b, 0);
+
+        const mapColors = {
+            'Ancient': '#4a7c4e',
+            'Anubis': '#c9a84c',
+            'Dust II': '#c8a96e',
+            'Inferno': '#c0522a',
+            'Mirage': '#d4a844',
+            'Nuke': '#7a9bb5',
+            'Overpass': '#6b8f5e',
+            'Train': '#8a7f72',
+            'Vertigo': '#4a6fa5',
+            'Office': '#7a9e7e',
+            'Italy': '#e8b84b',
+        };
+
+        const colors = labels.map(l => mapColors[l] ?? '#aaaaaa');
+
+        new Chart(document.getElementById('mapsChart'), {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderColor: '#f0f2f6',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : '0.0';
+                                return ` ${ctx.label} : ${ctx.parsed} parties (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 
 </html>

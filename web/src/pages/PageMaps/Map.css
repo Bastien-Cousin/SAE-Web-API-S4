@@ -159,3 +159,59 @@ h1 {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(232, 146, 42, 0.3);
 }
+
+.stats-section {
+    max-width: 1200px;
+    margin: 64px auto 0;
+    padding: 0 24px;
+    text-align: center;
+}
+
+.stats-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--clr-bg);
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-decoration-color: var(--clr-accent);
+    text-underline-offset: 8px;
+    margin-bottom: 48px;
+}
+
+.chart-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px 20px;
+    margin-top: 32px;
+    font-size: 0.85rem;
+    color: var(--clr-bg);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.stats-subtitle {
+    font-size: 1rem;
+    color: var(--clr-bg);
+    opacity: 0.6;
+    margin-top: -32px;
+    margin-bottom: 32px;
+}
