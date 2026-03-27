@@ -100,6 +100,258 @@ function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Fonction pour importer les matches d'un tournoi spécifique
+async function importTournamentMatches(tournamentName: string): Promise<void> {
+    console.log('\n' + '='.repeat(60));
+    console.log(`🏆 IMPORT DES MATCHES POUR: ${tournamentName}`);
+    console.log('='.repeat(60));
+
+    const matchesData: match[] = [];
+    const params: PaginationParams = {
+        wiki: 'counterstrike',
+        conditions: `[[tournament::${tournamentName}]]`,
+        limit: 100,
+        offset: 0
+    };
+
+    let page: number = 1;
+    let totalFetched: number = 0;
+    const MAX_MATCHES: number = 1000;
+
+    try {
+        // Pagination pour récupérer tous les matchs du tournoi
+        while (totalFetched < MAX_MATCHES) {
+            console.log(`\n📄 Page ${page} - Offset: ${params.offset}`);
+
+            try {
+                const response = await axios.get<{ result: match[] }>(url, {
+                    headers: headers,
+                    params: params,
+                    timeout: 10000
+                });
+
+                if (response.status === 200) {
+                    const data: match[] = response.data.result || [];
+                    console.log(`   ✅ ${data.length} matchs récupérés`);
+
+                    if (data.length === 0) {
+                        console.log('   ✋ Fin de la pagination');
+                        break;
+                    }
+
+                    matchesData.push(...data);
+                    totalFetched += data.length;
+
+                    if (totalFetched >= MAX_MATCHES) {
+                        console.log(`   ⚠️ Limite de ${MAX_MATCHES} matchs atteinte`);
+                        break;
+                    }
+
+                    params.offset += params.limit;
+                    await sleep(2000);
+                    page++;
+                }
+            } catch (error: any) {
+                if (error.response?.status === 429) {
+                    console.log('   ⏱️ Rate limit (429) - attente 60s...');
+                    await sleep(60000);
+                    continue;
+                } else {
+                    console.error(`   ❌ Erreur: ${error.message}`);
+                    break;
+                }
+            }
+        }
+
+        console.log(`\n📊 Total récupéré: ${totalFetched}`);
+
+        // Insertion dans la base de données
+        const client: PoolClient = await pool.connect();
+
+        try {
+            let insertedCount = 0;
+
+            for (const match of matchesData) {
+                try {
+                    // Vérifier si existe déjà
+                    const checkQuery = 'SELECT 1 FROM match WHERE pageid = $1';
+                    const existsResult = await client.query(checkQuery, [match.pageid]);
+
+                    if (existsResult.rows.length > 0) {
+                        console.log(`   ℹ️  ${match.objectname} existe déjà`);
+                        continue;
+                    }
+
+                    let dateValue: string | null = match.date || null;
+                    if (dateValue === '0000-01-01' || !dateValue || dateValue.startsWith('0000-')) {
+                        dateValue = null;
+                    }
+
+                    let finished: boolean | null = match.finished || false;
+                    let dateexact: boolean | null = match.dateexact || false;
+
+                    const query: string = `
+            INSERT INTO match (
+                pageid, pagename, namespace, objectname, match2id, match2bracketid, status, winner, walkover, 
+                resulttype, finished, mode, type, section, game, patch, links, bestof, date, dateexact, 
+                stream, vod, tournament, parent, tickername, shortname, series, icon, iconurl, icondark, 
+                icondarkurl, liquipediatier, liquipediatiertype, publishertier, extradata, match2bracketdata, 
+                match2games, match2opponents
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 
+                $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38
+            ) ON CONFLICT (pageid) DO UPDATE SET
+                status = EXCLUDED.status,
+                winner = EXCLUDED.winner,
+                walkover = EXCLUDED.walkover,
+                resulttype = EXCLUDED.resulttype,
+                finished = EXCLUDED.finished,
+                match2bracketdata = EXCLUDED.match2bracketdata,
+                match2games = EXCLUDED.match2games,
+                match2opponents = EXCLUDED.match2opponents;
+          `;
+
+                    const values: any[] = [
+                        match.pageid,
+                        match.pagename,
+                        match.namespace,
+                        match.objectname,
+                        match.match2id,
+                        match.match2bracketid,
+                        match.status,
+                        match.winner,
+                        match.walkover,
+                        match.resulttype,
+                        finished,
+                        match.mode,
+                        match.type,
+                        match.section,
+                        match.game,
+                        match.patch,
+                        JSON.stringify(match.links || {}),
+                        match.bestof,
+                        dateValue,
+                        dateexact,
+                        JSON.stringify(match.stream || {}),
+                        match.vod,
+                        match.tournament,
+                        match.parent,
+                        match.tickername,
+                        match.shortname,
+                        match.series,
+                        match.icon,
+                        match.iconurl,
+                        match.icondark,
+                        match.icondarkurl,
+                        match.liquipediatier,
+                        match.liquipediatiertype,
+                        match.publishertier,
+                        JSON.stringify(match.extradata || {}),
+                        JSON.stringify(match.match2bracketdata || {}),
+                        JSON.stringify(match.match2games || {}),
+                        JSON.stringify(match.match2opponents || {})
+                    ];
+
+                    await client.query(query, values);
+                    insertedCount++;
+                    console.log(`   ✅ ${match.objectname} inséré`);
+                } catch (error: any) {
+                    console.error(`   ❌ Erreur: ${match.objectname}: ${error.message}`);
+                }
+            }
+
+            console.log(`\n💾 ${insertedCount} matchs insérés`);
+
+            // Lier les équipes
+            await linkTeamsToMatches(client);
+
+            console.log('='.repeat(60) + '\n');
+        } finally {
+            client.release();
+        }
+    } catch (error: any) {
+        console.error(`❌ Erreur globale: ${error.message}`);
+    }
+}
+
+// Fonction pour lier les équipes aux matches
+async function linkTeamsToMatches(client: PoolClient): Promise<void> {
+    console.log('\n' + '='.repeat(60));
+    console.log('🔗 LIAISON DES ÉQUIPES AUX MATCHES');
+    console.log('='.repeat(60));
+
+    try {
+        // Récupérer tous les matches qui n'ont pas team1_id rempli
+        const matchesWithoutTeams = await client.query(`
+            SELECT pageid, match2opponents FROM match 
+            WHERE team1_id IS NULL AND match2opponents IS NOT NULL
+            ORDER BY pageid DESC
+        `);
+
+        console.log(`   📋 ${matchesWithoutTeams.rows.length} matches à traiter`);
+
+        let linked = 0;
+        let skipped = 0;
+
+        for (const row of matchesWithoutTeams.rows) {
+            try {
+                const opponents = JSON.parse(row.match2opponents);
+                
+                if (!Array.isArray(opponents) || opponents.length < 2) {
+                    console.log(`   ⏭️  Match ${row.pageid}: format invalide`);
+                    skipped++;
+                    continue;
+                }
+
+                const team1Name = opponents[0].name?.trim();
+                const team2Name = opponents[1].name?.trim();
+
+                if (!team1Name || !team2Name) {
+                    console.log(`   ⏭️  Match ${row.pageid}: noms d'équipes manquants`);
+                    skipped++;
+                    continue;
+                }
+
+                // Récupérer les IDs des équipes (recherche exacte + insensible à la casse)
+                const team1Result = await client.query(
+                    'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
+                    [team1Name]
+                );
+                const team2Result = await client.query(
+                    'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
+                    [team2Name]
+                );
+
+                if (team1Result.rows.length === 0 || team2Result.rows.length === 0) {
+                    console.log(`   ⏭️  Match ${row.pageid}: équipes non trouvées (${team1Name} vs ${team2Name})`);
+                    skipped++;
+                    continue;
+                }
+
+                const team1Id = team1Result.rows[0].pageid;
+                const team2Id = team2Result.rows[0].pageid;
+
+                // Lier les équipes au match
+                await client.query(
+                    'UPDATE match SET team1_id = $1, team2_id = $2 WHERE pageid = $3',
+                    [team1Id, team2Id, row.pageid]
+                );
+
+                linked++;
+                console.log(`   ✅ Match ${row.pageid}: ${team1Name} (${team1Id}) vs ${team2Name} (${team2Id})`);
+            } catch (error: any) {
+                console.error(`   ❌ Erreur pour match ${row.pageid}: ${error.message}`);
+                skipped++;
+            }
+        }
+
+        console.log(`\n   📊 Résumé: ${linked} liés, ${skipped} ignorés`);
+        console.log('='.repeat(60) + '\n');
+    } catch (error: any) {
+        console.error(`   ❌ Erreur globale de liaison: ${error.message}`);
+    }
+}
+
 // Fonction pour mettre à jour les matchs
 async function updateMatches(): Promise<void> {
     console.log('\n' + '='.repeat(60));
@@ -307,6 +559,9 @@ async function updateMatches(): Promise<void> {
 
             console.log(`\n💾 ${totalInserted} matchs insérés avec succès !`);
 
+            // Lier les équipes aux matches
+            await linkTeamsToMatches(client);
+
             console.log('='.repeat(60));
             console.log('✅ MISE À JOUR TERMINÉE');
             console.log('='.repeat(60) + '\n');
@@ -321,7 +576,20 @@ async function updateMatches(): Promise<void> {
 // Fonction principale pour exécuter la mise à jour une seule fois
 async function main(): Promise<void> {
     try {
-        await updateMatches();
+        // Vérifier si un argument est fourni pour importer un tournoi spécifique
+        const args = process.argv.slice(2);
+        
+        if (args.length > 0) {
+            // Mode: import d'un tournoi spécifique
+            const tournamentName = args.join(' ');
+            console.log(`\n🎯 Mode spécifique: import du tournoi "${tournamentName}"`);
+            await importTournamentMatches(tournamentName);
+        } else {
+            // Mode: import général
+            console.log('\n🎯 Mode général: import de tous les matchs');
+            await updateMatches();
+        }
+        
         await pool.end();
         process.exit(0);
     } catch (error: any) {

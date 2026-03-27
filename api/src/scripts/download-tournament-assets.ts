@@ -1,17 +1,47 @@
-import { prisma } from '../client.js'
-import * as fs from 'fs'
+import { fileURLToPath } from 'url'
 import * as path from 'path'
+import * as dotenv from 'dotenv'
+import pg from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
+import * as fs from 'fs'
 import https from 'https'
 import http from 'http'
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// Charger .env.local (dev local) en priorité, puis .env (fallback)
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env.local') })
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') })
+
+import { PrismaClient } from '@prisma/client'
+
+// Si on est dans Docker (pas de LOCAL_DEV), remplacer localhost par db
+let connectionString = process.env.DATABASE_URL || 'postgresql://sae_user:sae_password@localhost:5432/sae_db'
+
+if (!process.env.LOCAL_DEV) {
+    connectionString = connectionString.replace('localhost', 'db')
+}
+
+const client = new pg.Client({
+    connectionString,
+})
+
+const adapter = new PrismaPg(client)
+const prisma = new PrismaClient({ adapter })
+
 /**
- * Script pour télécharger les assets des tournois depuis Liquipedia
- * (banners, icons) et les sauvegarder localement
- * 
- * Usage: npx ts-node src/scripts/download-tournament-assets.ts
+ * Script pour télécharger les bannières des tournois depuis Liquipedia
+ * et les sauvegarder localement
  */
 
-const ASSETS_DIR = path.join(process.cwd(), 'public', 'assets', 'tournaments')
+/**
+ * En production (Docker), les images doivent être stockées dans le dossier public
+ * qui est accessible depuis l'app web via `/assets`
+ */
+const ASSETS_DIR = process.env.LOCAL_DEV 
+    ? path.join(process.cwd(), 'public', 'assets', 'tournaments')
+    : '/app/public/assets/tournaments'
 
 // Créer les dossiers nécessaires
 function ensureDirectoriesExist() {
@@ -82,11 +112,11 @@ function generateTournamentFilename(tournamentId: bigint, assetType: string): st
 }
 
 /**
- * Télécharger tous les assets des tournois
+ * Télécharger tous les bannières des tournois
  */
 async function downloadTournamentAssets() {
     try {
-        console.log('🚀 Démarrage du téléchargement des assets des tournois...\n')
+        console.log('🚀 Démarrage du téléchargement des bannières des tournois...\n')
 
         ensureDirectoriesExist()
 
@@ -94,9 +124,8 @@ async function downloadTournamentAssets() {
         const tournaments = await prisma.tournament.findMany({
             select: {
                 pageid: true,
-                objectname: true,
+                name: true,
                 bannerurl: true,
-                iconurl: true,
             },
         })
 
@@ -106,36 +135,28 @@ async function downloadTournamentAssets() {
         let totalDownloads = 0
 
         for (const tournament of tournaments) {
-            console.log(`\n📥 Traitement: ${tournament.objectname} (ID: ${tournament.pageid})`)
+            console.log(`\n📥 Traitement: ${tournament.name}`)
 
-            const assets = [
-                { url: tournament.bannerurl, type: 'banner' },
-                { url: tournament.iconurl, type: 'icon' },
-            ]
+            if (!tournament.bannerurl) {
+                console.log('   ⏭️  Pas de bannière disponible')
+                continue
+            }
 
-            for (const asset of assets) {
-                if (!asset.url) continue
+            const filename = generateTournamentFilename(tournament.pageid, 'banner')
+            const success = await downloadFile(tournament.bannerurl, filename)
 
-                const filename = generateTournamentFilename(tournament.pageid, asset.type)
-                const success = await downloadFile(asset.url, filename)
+            totalDownloads++
+            if (success) {
+                successCount++
+                // Mettre à jour l'URL dans la base de données
+                const publicUrl = `/assets/tournaments/${filename}`
 
-                totalDownloads++
-                if (success) {
-                    successCount++
-                    // Mettre à jour l'URL dans la base de données
-                    const publicUrl = `/assets/tournaments/${filename}`
+                await prisma.tournament.update({
+                    where: { pageid: tournament.pageid },
+                    data: { bannerurl: publicUrl },
+                })
 
-                    const updateData: any = {}
-                    if (asset.type === 'banner') updateData.bannerurl = publicUrl
-                    else if (asset.type === 'icon') updateData.iconurl = publicUrl
-
-                    await prisma.tournament.update({
-                        where: { pageid: tournament.pageid },
-                        data: updateData,
-                    })
-
-                    console.log(`   ✅ Mis à jour: ${publicUrl}`)
-                }
+                console.log(`   ✅ Mis à jour: ${publicUrl}`)
             }
         }
 
@@ -147,10 +168,33 @@ async function downloadTournamentAssets() {
     } catch (error) {
         console.error('❌ Erreur:', error)
         process.exit(1)
-    } finally {
-        await prisma.$disconnect()
     }
 }
 
+// Gestion Ctrl+C
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Arrêt du service...')
+    await prisma.$disconnect()
+    await client.end()
+    process.exit(0)
+})
+
+process.on('SIGTERM', async () => {
+    console.log('\n🛑 Arrêt du service...')
+    await prisma.$disconnect()
+    await client.end()
+    process.exit(0)
+})
+
 // Exécuter
 downloadTournamentAssets()
+    .then(async () => {
+        await prisma.$disconnect()
+        await client.end()
+    })
+    .catch(async (e) => {
+        console.error(e)
+        await prisma.$disconnect()
+        await client.end()
+        process.exit(1)
+    })

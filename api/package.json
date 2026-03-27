@@ -26,11 +26,12 @@
     "reset:team-urls": "npx tsx ./src/scripts/reset-team-urls.ts",
     "download:team-logos": "npx tsx ./src/scripts/download-team-logos.ts",
     "download:tournament-assets": "npx tsx ./src/scripts/download-tournament-assets.ts",
+    "download:tournament-banners": "npx tsx ./src/scripts/download-tournament-banners.ts",
     "reset:tournament-urls": "npx tsx ./src/scripts/reset-tournament-urls.ts",
     "diagnose": "npx tsx ./src/scripts/diagnose-db.ts",
     "fix:team-urls": "npx tsx ./src/scripts/fix-team-logo-urls.ts",
     "download:all": "npm run download:team-logos && npm run download:tournament-assets",
-    "setup": "npm run db:setup && npm run import:all && npm run download:all"
+    "setup": "npm run db:migrate && npm run db:generate && npm run db:seed && npm run import:all && npm run download:team-logos && npm run fix:team-urls && npm run download:tournament-assets && npm run reset:tournament-urls"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
