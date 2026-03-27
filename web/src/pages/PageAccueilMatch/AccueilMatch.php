@@ -1,101 +1,242 @@
 <!DOCTYPE html>
 <html lang="fr">
 
-    <head>
-        <meta charset="UTF-8">
-        <title>CS2 - Accueil Tournoi</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="../../style.css">
-        <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
-        <link rel="stylesheet" href="../../components/componentMatchBar/matchBar.css">
-        <link rel="stylesheet" href="AccueilMatch.css">
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <title>CS2 - Accueil Match</title>
 
-    <body>
+    <link rel="stylesheet" href="../../style.css">
+    <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
+    <link rel="stylesheet" href="../../components/componentMatchBar/matchBar.css">
+    <link rel="stylesheet" href="AccueilMatch.css">
+</head>
 
-        <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
+<body>
 
-        <form method="GET" class="filters">
-            <button type="button" class="filter-btn" onclick="document.getElementById('mapsFilter').style.display='inline-block'">Maps</button>
-            <button type="button" class="filter-btn" onclick="document.getElementById('teamFilter').style.display='inline-block'">Équipe</button>
-            <button type="button" class="filter-btn" onclick="document.getElementById('scoreFilter').style.display='inline-block'">Score</button>
-            <button type="button" class="filter-btn" onclick="document.getElementById('dateFilter').style.display='inline-block'">Date</button>
+    <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
 
-            <input type="text" name="team" id="teamFilter" placeholder="Nom équipe..." value="<?= htmlspecialchars($_GET['team'] ?? '') ?>" style="display:none;" class="search-bar">
-            <select name="maps" id="mapsFilter" style="display:none;">
-                <option value="">Toutes les maps</option>
-                <option value="Inferno" <?= (($_GET['maps'] ?? '') === 'Inferno') ? 'selected' : '' ?>>Inferno</option>
-                <option value="Mirage" <?= (($_GET['maps'] ?? '') === 'Mirage') ? 'selected' : '' ?>>Mirage</option>
-                <option value="Nuke" <?= (($_GET['maps'] ?? '') === 'Nuke') ? 'selected' : '' ?>>Nuke</option>
-            </select>
-            <select name="score" id="scoreFilter" style="display:none;">
-                <option value="">Tous les scores</option>
-                <option value="2-0" <?= (($_GET['score'] ?? '') === '2-0') ? 'selected' : '' ?>>2 - 0</option>
-                <option value="2-1" <?= (($_GET['score'] ?? '') === '2-1') ? 'selected' : '' ?>>2 - 1</option>
-                <option value="1-2" <?= (($_GET['score'] ?? '') === '1-2') ? 'selected' : '' ?>>1 - 2</option>
-            </select>
-            <input type="date" name="date" id="dateFilter" value="<?= $_GET['date'] ?? '' ?>" style="display:none;">
+    <!-- 🔍 FILTRES -->
+    <form method="GET" class="filters">
+        <input type="text" name="search" placeholder="Rechercher une équipe..." class="search-bar"
+            value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
 
-            <button type="submit" class="filter-btn filter-blue">Filtrer</button>
-            <button type="submit" class="filter-btn filter-green">Rechercher</button>
-        </form>
-
-        <?php include __DIR__ . '/../../components/componentMatchBar/matchBar.php'; ?>
-
-        <?php
-        $matches = [
-            ['team1_logo' => "/img/LogosEquipes/vitality.png", 'team1_name' => "Team Vitality", 'score' => "2-0", 'team2_name' => "Faze", 'team2_logo' => "/img/LogosEquipes/faze.png", 'date' => "2026-03-24", 'maps' => "Inferno:13-9;Mirage:13-8", 'link' => "/pages/PageAccueilMatch/DescriptionMatch.php?team1=Team Vitality&team2=Faze&score=2-0&maps=Inferno:13-9;Mirage:13-8"],
-            ['team1_logo' => "/img/LogosEquipes/mouz.png", 'team1_name' => "Mouz", 'score' => "1-2", 'team2_name' => "Team Spirit", 'team2_logo' => "/img/LogosEquipes/spirit.png", 'date' => "2026-03-23", 'maps' => "Inferno:9-13;Mirage:16-13;Nuke:8-13", 'link' => "/pages/PageAccueilMatch/DescriptionMatch.php?team1=Mouz&team2=Team Spirit&score=1-2&maps=Inferno:9-13;Mirage:16-13;Nuke:8-13"],
-            ['team1_logo' => "/img/LogosEquipes/vitality.png", 'team1_name' => "Team Vitality", 'score' => "2-1", 'team2_name' => "Mouz", 'team2_logo' => "/img/LogosEquipes/mouz.png", 'date' => "2026-03-23", 'maps' => "Inferno:13-9;Mirage:10-13;Nuke:13-8", 'link' => "/pages/PageAccueilMatch/DescriptionMatch.php?team1=Team Vitality&team2=Mouz&score=2-1&maps=Inferno:13-9;Mirage:10-13;Nuke:13-8"],
-            ['team1_logo' => "/img/LogosEquipes/faze.png", 'team1_name' => "Faze", 'score' => "1-2", 'team2_name' => "Team Spirit", 'team2_logo' => "/img/LogosEquipes/spirit.png", 'date' => "2026-03-23", 'maps' => "Inferno:11-13;Mirage:13-10;Nuke:9-13", 'link' => "/pages/PageAccueilMatch/DescriptionMatch.php?team1=Faze&team2=Team Spirit&score=1-2&maps=Inferno:11-13;Mirage:13-10;Nuke:9-13"]
-        ];
-
-        $teamFilter = $_GET['team'] ?? '';
-        $mapsFilter = $_GET['maps'] ?? '';
-        $scoreFilter = $_GET['score'] ?? '';
-        $dateFilter = $_GET['date'] ?? '';
-
-        $filteredMatches = array_filter($matches, function ($match) use ($teamFilter, $mapsFilter, $scoreFilter, $dateFilter) {
-            $teamMatch = $teamFilter === '' || stripos($match['team1_name'], $teamFilter) !== false || stripos($match['team2_name'], $teamFilter) !== false;
-            $mapsMatch = $mapsFilter === '' || stripos($match['maps'], $mapsFilter) !== false;
-            $scoreMatch = $scoreFilter === '' || $match['score'] === $scoreFilter;
-            $dateMatch = $dateFilter === '' || $match['date'] === $dateFilter;
-            return $teamMatch && $mapsMatch && $scoreMatch && $dateMatch;
-        });
-        ?>
-
-        <div
-            class="matches"><?php
-            if (empty($filteredMatches)) {
-                echo "<p>Aucun match trouvé.</p>";
-            } else {
-                foreach ($filteredMatches as $match) {
-                    renderMatchBar(
-                        $match['team1_logo'],
-                        $match['team1_name'],
-                        $match['score'],
-                        $match['team2_name'],
-                        $match['team2_logo'],
-                        $match['date'],
-                        $match['link']
-                    );
-                }
+        <select name="maps" class="filter-btn">
+            <option value="">Toutes les maps</option>
+            <?php
+            $mapsList = ["Ancient", "Dust II", "Inferno", "Mirage", "Nuke", "Vertigo", "Anubis"];
+            foreach ($mapsList as $map) {
+                $selected = (($_GET['maps'] ?? '') === $map) ? 'selected' : '';
+                echo "<option value=\"$map\" $selected>$map</option>";
             }
             ?>
-        </div>
+        </select>
 
-        <script>
-            ['maps', 'team', 'score', 'date'].forEach(id => {
-const btn = document.querySelector(`button[onclick*="${id}Filter"]`);
-const input = document.getElementById(id + 'Filter');
-btn ?. addEventListener('click', () => {
-input.style.display = 'inline-block';
-});
-});
-        </script>
+        <select name="score" class="filter-btn">
+            <option value="">Tous les scores</option>
+            <?php
+            $scores = ["3-0", "3-1", "3-2", "2-0", "2-1", "2-2", "2-3", "1-2", "1-3", "0-2", "0-3"];
+            foreach ($scores as $s) {
+                $selected = (($_GET['score'] ?? '') === $s) ? 'selected' : '';
+                echo "<option value=\"$s\" $selected>$s</option>";
+            }
+            ?>
+        </select>
 
-    </body>
+        <input type="date" name="date" class="filter-btn" value="<?= $_GET['date'] ?? '' ?>">
+
+        <button type="submit" class="filter-btn filter-green">Rechercher</button>
+    </form>
+
+    <?php include __DIR__ . '/../../components/componentMatchBar/matchBar.php'; ?>
+
+    <?php
+    /* ============================
+       🔌 CONNEXION DB
+    ============================ */
+    $pdo = new PDO(
+        "pgsql:host=" . (getenv('POSTGRES_HOST') ?: 'db') .
+        ";port=" . (getenv('POSTGRES_PORT') ?: '5432') .
+        ";dbname=" . (getenv('POSTGRES_DB') ?: 'sae_db'),
+        getenv('POSTGRES_USER') ?: 'sae_user',
+        getenv('POSTGRES_PASSWORD') ?: 'sae_password',
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+
+    /* ============================
+       🧠 UTILS
+    ============================ */
+
+    function decodeJson($data)
+    {
+        if (is_array($data))
+            return $data;
+        $decoded = json_decode($data, true);
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
+    }
+
+    function safeLogo($logo, $logourl, $textlesslogourl)
+    {
+        return $textlesslogourl ?: $logourl ?: $logo ?: '/img/LogosEquipes/default.png';
+    }
+
+    function extractTeams($match)
+    {
+        $team1 = $match['team1_name'] ?? '';
+        $team2 = $match['team2_name'] ?? '';
+
+        if ($team1 && $team2)
+            return [$team1, $team2];
+
+        $opponents = decodeJson($match['match2opponents'] ?? '');
+        $names = [];
+
+        foreach ($opponents as $opp) {
+            if (!empty($opp['name']))
+                $names[] = $opp['name'];
+        }
+
+        return [
+            $team1 ?: ($names[0] ?? 'Team 1'),
+            $team2 ?: ($names[1] ?? 'Team 2')
+        ];
+    }
+
+    function computeScore($match)
+    {
+        $games = decodeJson($match['match2games'] ?? '');
+        $t1 = 0;
+        $t2 = 0;
+
+        foreach ($games as $map) {
+            if (($map['status'] ?? '') === 'notplayed')
+                continue;
+
+            if (isset($map['score']) && preg_match('/(\d+)-(\d+)/', $map['score'], $m)) {
+                if ($m[1] > $m[2])
+                    $t1++;
+                elseif ($m[2] > $m[1])
+                    $t2++;
+            }
+        }
+
+        if ($t1 === 0 && $t2 === 0) {
+            $opponents = decodeJson($match['match2opponents'] ?? '');
+            if (count($opponents) >= 2) {
+                return ($opponents[0]['score'] ?? 0) . '-' . ($opponents[1]['score'] ?? 0);
+            }
+        }
+
+        return "$t1-$t2";
+    }
+
+    /* ============================
+       📥 FILTRES
+    ============================ */
+    $search = $_GET['search'] ?? '';
+    $mapsFilter = $_GET['maps'] ?? '';
+    $scoreFilter = $_GET['score'] ?? '';
+    $dateFilter = $_GET['date'] ?? '';
+
+    /* ============================
+       📦 REQUÊTE SQL
+    ============================ */
+    $sql = "
+SELECT m.*, 
+t1.name AS team1_name, t1.logo AS team1_logo, t1.logourl AS team1_logourl, t1.textlesslogourl AS team1_textlesslogourl,
+t2.name AS team2_name, t2.logo AS team2_logo, t2.logourl AS team2_logourl, t2.textlesslogourl AS team2_textlesslogourl
+FROM match m
+LEFT JOIN team t1 ON m.team1_id = t1.pageid
+LEFT JOIN team t2 ON m.team2_id = t2.pageid
+WHERE 1=1
+";
+
+    $params = [];
+
+    if ($mapsFilter !== '') {
+        $sql .= " AND m.match2games::text ILIKE :maps";
+        $params[':maps'] = "%$mapsFilter%";
+    }
+
+    if ($dateFilter !== '') {
+        $sql .= " AND DATE(m.date) = :date";
+        $params[':date'] = $dateFilter;
+    }
+
+    $sql .= " ORDER BY m.date DESC";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    /* ============================
+       🔎 FILTRES PHP
+    ============================ */
+    $matches = array_filter($matches, function ($match) use ($search, $scoreFilter) {
+
+        list($team1, $team2) = extractTeams($match);
+        $score = computeScore($match);
+
+        if ($search !== '') {
+            $s = strtolower($search);
+            if (
+                !str_contains(strtolower($team1), $s) &&
+                !str_contains(strtolower($team2), $s)
+            ) {
+                return false;
+            }
+        }
+
+        if ($scoreFilter !== '' && $score !== $scoreFilter) {
+            return false;
+        }
+
+        return true;
+    });
+    ?>
+
+    <!-- 🎨 AFFICHAGE -->
+    <div class="matches">
+        <?php
+        if (empty($matches)) {
+            echo "<p>Aucun match trouvé.</p>";
+        } else {
+            foreach ($matches as $match) {
+
+                list($team1, $team2) = extractTeams($match);
+                $score = computeScore($match);
+
+                $team1Logo = safeLogo(
+                    $match['team1_logo'] ?? '',
+                    $match['team1_logourl'] ?? '',
+                    $match['team1_textlesslogourl'] ?? ''
+                );
+
+                $team2Logo = safeLogo(
+                    $match['team2_logo'] ?? '',
+                    $match['team2_logourl'] ?? '',
+                    $match['team2_textlesslogourl'] ?? ''
+                );
+
+                $date = !empty($match['date'])
+                    ? date('Y-m-d', strtotime($match['date']))
+                    : 'N/A';
+
+                $link = "/pages/PageAccueilMatch/DescriptionMatch.php?id=" . urlencode($match['pageid']);
+
+                renderMatchBar(
+                    $team1Logo,
+                    $team1,
+                    $score,
+                    $team2,
+                    $team2Logo,
+                    $date,
+                    $link
+                );
+            }
+        }
+        ?>
+    </div>
+
+</body>
+
 </html>
-
