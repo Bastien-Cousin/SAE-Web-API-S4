@@ -55,7 +55,7 @@ function renderTeamCard($team)
     $logo = $team['textlesslogourl'] ?? $team['logourl'] ?? '';
 
     if (empty($logo)) {
-        $logo = "https://via.placeholder.com/100?text=No+Logo";
+        $logo = "../../img/ImagesDivers/placeholder.jpg";
     }
 
     $name = htmlspecialchars($team['name'] ?? 'Unknown');
@@ -73,51 +73,53 @@ function renderTeamCard($team)
 
 <!DOCTYPE html>
 <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <title>CS2 - Équipes</title>
 
-        <link rel="stylesheet" href="../../style.css">
-        <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
-        <link rel="stylesheet" href="../../components/ComponentCardTeam/cardTeam.css">
-        <link rel="stylesheet" href="AccueilEquipe.css">
-    </head>
-    <body>
+<head>
+    <meta charset="UTF-8">
+    <title>CS2 - Équipes</title>
 
-        <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
+    <link rel="stylesheet" href="../../style.css">
+    <link rel="stylesheet" href="../../components/ComponentNavbar/navbar.css">
+    <link rel="stylesheet" href="../../components/ComponentCardTeam/cardTeam.css">
+    <link rel="stylesheet" href="AccueilEquipe.css">
+</head>
 
-        <form method="GET" class="filters">
-            <input type="text" name="search" placeholder="Rechercher une équipe..." class="search-bar" value="<?= htmlspecialchars($search) ?>">
+<body>
 
-            <select name="country" class="filter-btn">
-                <option value="">Toutes les régions / zones</option>
-                <?php foreach ($regions as $regionOption): ?>
-                    <option
-                        value="<?= htmlspecialchars($regionOption) ?>" <?= ($country === $regionOption) ? 'selected' : '' ?>><?= htmlspecialchars(strtoupper($regionOption)) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
+    <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
 
-            <select name="sort" class="filter-btn">
-                <option value="name_asc" <?= $sort === 'name_asc' ? 'selected' : '' ?>>Nom A → Z</option>
-                <option value="name_desc" <?= $sort === 'name_desc' ? 'selected' : '' ?>>Nom Z → A</option>
-            </select>
+    <form method="GET" class="filters">
+        <input type="text" name="search" placeholder="Rechercher une équipe..." class="search-bar"
+            value="<?= htmlspecialchars($search) ?>">
 
-            <button type="submit" class="filter-btn filter-blue">Appliquer</button>
-        </form>
+        <select name="country" class="filter-btn">
+            <option value="">Toutes les régions / zones</option>
+            <?php foreach ($regions as $regionOption): ?>
+                <option value="<?= htmlspecialchars($regionOption) ?>" <?= ($country === $regionOption) ? 'selected' : '' ?>>
+                    <?= htmlspecialchars(strtoupper($regionOption)) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
 
-        <div
-            class="teams"><?php
-            if (empty($teams)) {
-                echo "<p>Aucune équipe trouvée.</p>";
-            } else {
-                foreach ($teams as $team) {
-                    renderTeamCard($team);
-                }
-            }
-            ?>
-        </div>
+        <select name="sort" class="filter-btn">
+            <option value="name_asc" <?= $sort === 'name_asc' ? 'selected' : '' ?>>Nom A → Z</option>
+            <option value="name_desc" <?= $sort === 'name_desc' ? 'selected' : '' ?>>Nom Z → A</option>
+        </select>
 
-    </body>
+        <button type="submit" class="filter-btn filter-blue">Appliquer</button>
+    </form>
+
+    <div class="teams"><?php
+    if (empty($teams)) {
+        echo "<p>Aucune équipe trouvée.</p>";
+    } else {
+        foreach ($teams as $team) {
+            renderTeamCard($team);
+        }
+    }
+    ?>
+    </div>
+
+</body>
+
 </html>
-
