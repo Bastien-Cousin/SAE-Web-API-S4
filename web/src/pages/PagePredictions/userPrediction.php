@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . "/../../utils/auth.php";
+$user = requireAuth();
 
 // ─── Récupération sécurisée ─────────────────────────────
 $team1_id   = $_GET['team1_id'] ?? '';

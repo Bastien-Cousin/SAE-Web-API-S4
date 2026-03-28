@@ -1,5 +1,4 @@
 <?php
-session_start();
 
 $error = null;
 $success = null;
@@ -47,17 +46,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } else {
             $response = json_decode($result, true);
 
-            // CORRECTION : inspecter aussi le code de statut HTTP retourné
-            // $http_response_header est une variable magique PHP remplie par file_get_contents
             $statusCode = 200;
             if (!empty($http_response_header)) {
-                // La première ligne est du type "HTTP/1.1 201 Created"
                 preg_match('/HTTP\/\d\.\d\s+(\d+)/', $http_response_header[0], $matches);
                 $statusCode = isset($matches[1]) ? (int)$matches[1] : 200;
             }
 
             if ($statusCode >= 400) {
-                // Afficher le message d'erreur renvoyé par l'API
                 $error = $response["error"] ?? "Une erreur est survenue (code $statusCode).";
             } else {
                 if (isset($response["token"])) {
@@ -73,10 +68,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             "samesite" => "Strict"
                         ]
                     );
-                }
-
-                if (isset($response["user"])) {
-                    $_SESSION["user"] = $response["user"];
                 }
 
                 header("Location: ../../index.php");
@@ -101,7 +92,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <a href="../../index.php" id="bouton-retour">Retourner à l'accueil</a>
 
         <?php if ($error): ?>
-            <!-- CORRECTION : htmlspecialchars pour éviter les failles XSS -->
             <p style="color:red;"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
         <?php endif; ?>
 

@@ -3,6 +3,7 @@ import type { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from "./client.js";
+import { authenticateToken } from './auth.middleware.js';
 
 export const authRouter = Router()
 
@@ -118,3 +119,31 @@ authRouter.post('/api/auth/sign-in', async (req: Request, res: Response) => {
         return res.status(500).json({ error: 'Erreur serveur' })
     }
 })
+
+/**
+ * GET /api/auth/me
+ */
+authRouter.get('/api/auth/me', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        // Récupérer l'utilisateur en base avec l'ID du token
+        const user = await prisma.user.findUnique({
+            where: { id: req.user!.userId },
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'Utilisateur introuvable' });
+        }
+
+        // Retourner uniquement les infos publiques
+        return res.status(200).json({
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+            },
+        });
+    } catch (error) {
+        console.error('Erreur /me:', error);
+        return res.status(500).json({ error: 'Erreur serveur' });
+    }
+});

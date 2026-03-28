@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . "/../../utils/auth.php";
+$user = requireAuth();
 
 $host     = getenv('POSTGRES_HOST')     ?: 'db';
 $port     = getenv('POSTGRES_PORT')     ?: '5432';
