@@ -145,7 +145,7 @@
 
                         <span class="upcoming__date"><?= $date ?></span>
 
-                        <a href="#" class="btn btn--xs">Voir</a>
+                        <a href="../pages/PageAccueilMatch/AccueilMatch.php" class="btn btn--xs">Voir</a>
                     </div>
                 <?php endforeach; ?>
             </div>
