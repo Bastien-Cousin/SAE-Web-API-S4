@@ -1,21 +1,15 @@
-import { fileURLToPath } from 'url'
-import * as path from 'path'
+import { prisma } from '../client.js'
 import * as fs from 'fs'
+import * as path from 'path'
 import https from 'https'
 import http from 'http'
-import { prisma } from '../client.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 /**
  * Script pour télécharger les bannières des tournois depuis Liquipedia
  * et les sauvegarder localement
  */
 
-const ASSETS_DIR = process.env.LOCAL_DEV 
-    ? path.join(process.cwd(), 'public', 'assets', 'tournaments')
-    : '/var/www/html/assets/tournaments'
+const ASSETS_DIR = path.join(process.cwd(), 'public', 'assets', 'tournaments')
 
 /**
  * Attendre (sleep) en ms
@@ -47,12 +41,13 @@ function getFileExtension(url: string): string {
 }
 
 /**
- * Valider une URL
+ * Valider une URL HTTP/HTTPS
  */
 function isValidUrl(url: string): boolean {
+    if (!url) return false
     try {
-        new URL(url)
-        return true
+        const urlObj = new URL(url)
+        return urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
     } catch {
         return false
     }
@@ -102,7 +97,6 @@ function downloadFile(url: string, filename: string): Promise<boolean> {
 
             file.on('finish', () => {
                 file.close()
-                console.log(`✅ Téléchargé: ${filename}`)
                 resolve(true)
             })
 
@@ -155,8 +149,6 @@ async function downloadTournamentBanners() {
                 { url: tournament.iconurl, type: 'icon' },
             ]
 
-            const updateData: any = {}
-
             for (const asset of assets) {
                 if (!asset.url) continue
 
@@ -167,22 +159,8 @@ async function downloadTournamentBanners() {
                 totalDownloads++
                 if (success) {
                     successCount++
-                    // Mettre à jour l'URL dans la base de données
-                    const publicUrl = `/assets/tournaments/${filename}`
-
-                    if (asset.type === 'banner') updateData.bannerurl = publicUrl
-                    else if (asset.type === 'icon') updateData.iconurl = publicUrl
-
-                    console.log(`   ✅ Mis à jour: ${publicUrl}`)
+                    console.log(`   ✅ Téléchargé: ${filename}`)
                 }
-            }
-
-            // Mettre à jour la BD si au moins un fichier a été téléchargé
-            if (Object.keys(updateData).length > 0) {
-                await prisma.tournament.update({
-                    where: { pageid: tournament.pageid },
-                    data: updateData,
-                })
             }
         }
 
@@ -194,7 +172,6 @@ async function downloadTournamentBanners() {
     } catch (error: any) {
         console.error(`❌ Erreur: ${error.message}`)
         console.error('Stack complète:', error)
-        console.log('prisma object:', prisma)
         process.exit(1)
     } finally {
         await prisma.$disconnect()
