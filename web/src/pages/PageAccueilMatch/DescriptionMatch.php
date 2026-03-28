@@ -60,24 +60,22 @@
             return !empty($logo) ? $logo : '/img/LogosEquipes/default.png';
         }
 
-        function parseScoreMaps($match2games)
+        function parseMapsData($match2games)
         {
             if (empty($match2games)) {
-                return ['0-0', ''];
+                return [];
             }
             if (!is_array($match2games)) {
                 $decoded = json_decode($match2games, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
-                    return ['0-0', ''];
+                    return [];
                 }
                 $match2games = $decoded;
             }
             if (!is_array($match2games)) {
-                return ['0-0', ''];
+                return [];
             }
 
-            $team1Wins = 0;
-            $team2Wins = 0;
             $maps = [];
             foreach ($match2games as $map) {
                 if (!is_array($map))
@@ -85,57 +83,52 @@
 
                 $mapName = $map['map'] ?? $map['name'] ?? null;
 
-                $score = null;
-                if (isset($map['score']) && is_string($map['score'])) {
-                    $score = $map['score'];
-                } elseif (isset($map['result']) && is_string($map['result'])) {
-                    $score = $map['result'];
+                $s1 = null;
+                $s2 = null;
+
+                if (isset($map['score']) && preg_match('/^(\d+)-(\d+)$/', (string) $map['score'], $m)) {
+                    $s1 = intval($m[1]);
+                    $s2 = intval($m[2]);
+                } elseif (isset($map['result']) && preg_match('/^(\d+)-(\d+)$/', (string) $map['result'], $m)) {
+                    $s1 = intval($m[1]);
+                    $s2 = intval($m[2]);
                 } elseif (isset($map['scores']) && is_array($map['scores']) && count($map['scores']) >= 2) {
                     $s1 = intval($map['scores'][0] ?? 0);
                     $s2 = intval($map['scores'][1] ?? 0);
-                    $score = "{$s1}-{$s2}";
+                } elseif (isset($map['team1_score']) && isset($map['team2_score'])) {
+                    $s1 = intval($map['team1_score']);
+                    $s2 = intval($map['team2_score']);
                 }
 
-                if (!$mapName || !$score || $score === '0-0')
+                if (!$mapName || $s1 === null || $s2 === null)
                     continue;
-
-                if (!preg_match('/^(\d+)-(\d+)$/', $score, $m))
-                    continue;
-
-                $s1 = intval($m[1]);
-                $s2 = intval($m[2]);
 
                 if (($map['status'] ?? '') !== 'notplayed') {
-                    if ($s1 > $s2) {
-                        $team1Wins++;
-                    } elseif ($s2 > $s1) {
-                        $team2Wins++;
-                    }
-
-                    $maps[] = "$mapName:$score";
+                    $maps[] = [
+                        'name' => (string) $mapName,
+                        'team1' => $s1,
+                        'team2' => $s2,
+                    ];
                 }
             }
 
-            if (empty($maps)) {
-                return ['0-0', ''];
-            }
-            return ["{$team1Wins}-{$team2Wins}", implode(';', $maps)];
+            return $maps;
         }
 
         function parseScoreFromOpponents($match2opponents)
         {
             if (empty($match2opponents)) {
-                return ['0-0', ''];
+                return null;
             }
             if (!is_array($match2opponents)) {
                 $decoded = json_decode($match2opponents, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
-                    return ['0-0', ''];
+                    return null;
                 }
                 $match2opponents = $decoded;
             }
             if (!is_array($match2opponents)) {
-                return ['0-0', ''];
+                return null;
             }
 
             $scores = [];
@@ -158,19 +151,19 @@
             }
 
             if (count($scores) >= 2) {
-                return ["{$scores[0]}-{$scores[1]}", ''];
+                return [intval($scores[0]), intval($scores[1])];
             }
 
             if (isset($match2opponents['team1']) && isset($match2opponents['team2'])) {
                 $s1 = intval($match2opponents['team1']['score'] ?? $match2opponents['team1']['result'] ?? 0);
                 $s2 = intval($match2opponents['team2']['score'] ?? $match2opponents['team2']['result'] ?? 0);
-                return ["{$s1}-{$s2}", ''];
+                return [$s1, $s2];
             }
 
-            return ['0-0', ''];
+            return null;
         }
 
-        $stmt = $pdo->prepare("SELECT m.pageid, m.date, m.match2games, m.winner, m.match2opponents FROM match m WHERE m.pageid = ? AND COALESCE(m.status, '') <> 'prediction_only'");
+        $stmt = $pdo->prepare("SELECT m.pageid, m.date, m.match2games, m.winner, m.match2opponents, m.team1_id, m.team2_id, t1.name AS team1_name, t2.name AS team2_name FROM match m LEFT JOIN team t1 ON t1.pageid = m.team1_id LEFT JOIN team t2 ON t2.pageid = m.team2_id WHERE m.pageid = ? AND COALESCE(m.status, '') <> 'prediction_only'");
         $stmt->execute([$matchId]);
         $match = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -178,8 +171,8 @@
             die("❌ Match non trouvé.");
         }
 
-        $team1Name = '';
-        $team2Name = '';
+        $team1Name = (string) ($match['team1_name'] ?? '');
+        $team2Name = (string) ($match['team2_name'] ?? '');
         $date = !empty($match['date']) ? date('Y-m-d', strtotime($match['date'])) : 'N/A';
 
         $match2opponents = $match['match2opponents'] ?? '';
@@ -190,7 +183,7 @@
             }
         }
 
-        if (is_array($match2opponents)) {
+        if (is_array($match2opponents) && ($team1Name === '' || $team2Name === '')) {
             $names = [];
             foreach ($match2opponents as $opp) {
                 if (is_array($opp)) {
@@ -212,43 +205,30 @@
         $team1Logo = safeLogo(getTeamLogoByName($pdo, $team1Name));
         $team2Logo = safeLogo(getTeamLogoByName($pdo, $team2Name));
 
-        $match2games = $match['match2games'] ?? '';
-        list($computedScore, $computedMaps) = parseScoreMaps($match2games);
+        $mapsData = parseMapsData($match['match2games'] ?? '');
 
-        if ($computedScore === '0-0' && !empty($match['winner'])) {
-            if (stripos($match['winner'], $team1Name) !== false) {
-                $computedScore = '2-1';
-            } elseif (stripos($match['winner'], $team2Name) !== false) {
-                $computedScore = '1-2';
-            }
-        }
+        $score1 = 0;
+        $score2 = 0;
 
-        if ($computedScore === '0-0') {
-            list($fallbackScore, $fallbackMaps) = parseScoreFromOpponents($match2opponents);
-            if ($fallbackScore !== '0-0') {
-                $computedScore = $fallbackScore;
-                if (!empty($fallbackMaps)) {
-                    $computedMaps = $fallbackMaps;
+        $scoreFromOpponents = parseScoreFromOpponents($match2opponents);
+        if ($scoreFromOpponents !== null) {
+            $score1 = $scoreFromOpponents[0];
+            $score2 = $scoreFromOpponents[1];
+        } elseif (!empty($mapsData)) {
+            foreach ($mapsData as $mapRow) {
+                if ($mapRow['team1'] > $mapRow['team2']) {
+                    $score1++;
+                } elseif ($mapRow['team2'] > $mapRow['team1']) {
+                    $score2++;
                 }
             }
-        }
-
-        list($score1, $score2) = explode('-', $computedScore);
-
-        $mapsData = [];
-
-        if (!empty($computedMaps)) {
-            $mapsArray = explode(';', $computedMaps);
-
-            foreach ($mapsArray as $mapString) {
-                list($mapName, $scores) = explode(':', $mapString);
-                list($s1, $s2) = explode('-', $scores);
-
-                $mapsData[] = [
-                    "name" => $mapName,
-                    "team1" => (int) $s1,
-                    "team2" => (int) $s2
-                ];
+        } elseif (!empty($match['winner'])) {
+            if ((string) $match['winner'] === '1') {
+                $score1 = 1;
+                $score2 = 0;
+            } elseif ((string) $match['winner'] === '2') {
+                $score1 = 0;
+                $score2 = 1;
             }
         }
         ?>
@@ -295,3 +275,4 @@
     </body>
 
 </html>
+

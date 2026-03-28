@@ -59,6 +59,11 @@ function extractTeams($match)
 
 function computeScore($match)
 {
+    $opponents = decodeJson($match['match2opponents'] ?? '');
+    if (count($opponents) >= 2 && isset($opponents[0]['score']) && isset($opponents[1]['score'])) {
+        return intval($opponents[0]['score']) . '-' . intval($opponents[1]['score']);
+    }
+
     $games = decodeJson($match['match2games'] ?? '');
     $t1 = 0;
     $t2 = 0;
@@ -66,18 +71,22 @@ function computeScore($match)
     foreach ($games as $map) {
         if (($map['status'] ?? '') === 'notplayed')
             continue;
-        if (isset($map['score']) && preg_match('/(\d+)-(\d+)/', $map['score'], $m)) {
-            if ($m[1] > $m[2])
-                $t1++;
-            elseif ($m[2] > $m[1])
-                $t2++;
-        }
-    }
+        $s1 = null;
+        $s2 = null;
 
-    if ($t1 === 0 && $t2 === 0) {
-        $opponents = decodeJson($match['match2opponents'] ?? '');
-        if (count($opponents) >= 2) {
-            return ($opponents[0]['score'] ?? 0) . '-' . ($opponents[1]['score'] ?? 0);
+        if (isset($map['score']) && preg_match('/(\d+)-(\d+)/', (string) $map['score'], $m)) {
+            $s1 = intval($m[1]);
+            $s2 = intval($m[2]);
+        } elseif (isset($map['team1_score']) && isset($map['team2_score'])) {
+            $s1 = intval($map['team1_score']);
+            $s2 = intval($map['team2_score']);
+        }
+
+        if ($s1 !== null && $s2 !== null) {
+            if ($s1 > $s2)
+                $t1++;
+            elseif ($s2 > $s1)
+                $t2++;
         }
     }
 

@@ -73,6 +73,10 @@ try {
 
     <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
 
+    <?php if (isset($_GET['created']) && $_GET['created'] === '1'): ?>
+        <p style="text-align:center;color:#2f7f34;font-weight:600;">Équipe créée avec succès.</p>
+    <?php endif; ?>
+
     <div class="header-section">
         <h1>Equipe CS2</h1>
         <a href="FormulaireEquipe.php" class="btn-add-map">+ Nouvelle Equipe</a>

@@ -25,6 +25,20 @@ $teamData = $stmtTeam->fetch(PDO::FETCH_ASSOC);
 if (!$teamData)
     die("Équipe non trouvée");
 
+$teamExtradata = [];
+if (!empty($teamData['extradata'])) {
+    if (is_array($teamData['extradata'])) {
+        $teamExtradata = $teamData['extradata'];
+    } else {
+        $decodedExtradata = json_decode((string) $teamData['extradata'], true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decodedExtradata)) {
+            $teamExtradata = $decodedExtradata;
+        }
+    }
+}
+
+$ceoName = trim((string) ($teamExtradata['ceo'] ?? ''));
+
 $stmtPlayers = $pdo->prepare("
     SELECT p.*, t.logourl, t.textlesslogourl 
     FROM player p 
@@ -38,7 +52,7 @@ $playersData = $stmtPlayers->fetchAll(PDO::FETCH_ASSOC);
 $equipe = [
     'nom' => $teamData['name'] ?? 'Équipe inconnue',
     'logo' => $teamData['logourl'] ?? $teamData['logo'] ?? '/img/default_logo.png',
-    'ceo' => 'Non disponible',
+    'ceo' => $ceoName !== '' ? $ceoName : 'Non disponible',
     'creation' => $teamData['createdate'] ? date('Y', strtotime($teamData['createdate'])) : 'Non disponible',
     'argent' => number_format($teamData['earnings'] ?? 0) . ' €',
 ];
