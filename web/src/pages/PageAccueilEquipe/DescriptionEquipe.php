@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 include __DIR__ . '/../../components/ComponentCardPlayer/cardPlayer.php';
 
 $host = getenv('POSTGRES_HOST') ?: 'db';

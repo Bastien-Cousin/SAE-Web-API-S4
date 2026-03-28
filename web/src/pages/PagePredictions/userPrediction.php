@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 // ─── Récupération sécurisée ─────────────────────────────
 $team1_id   = $_GET['team1_id'] ?? '';
 $team2_id   = $_GET['team2_id'] ?? '';

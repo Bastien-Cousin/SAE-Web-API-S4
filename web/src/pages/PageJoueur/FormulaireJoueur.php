@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pseudo = $_POST['pseudo'] ?? '';
     $nomReel = $_POST['nom_reel'] ?? '';

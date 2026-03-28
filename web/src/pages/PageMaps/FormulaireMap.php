@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nomMap = trim($_POST['nom_map'] ?? '');
     $competition = trim($_POST['competition'] ?? '');

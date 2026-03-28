@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 include __DIR__ . '/../../components/ComponentCardTeam/cardTeam.php';
 
 $search  = $_GET['search']  ?? '';

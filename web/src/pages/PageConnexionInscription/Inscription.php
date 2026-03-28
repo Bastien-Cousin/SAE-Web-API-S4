@@ -11,14 +11,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $password = $_POST["password"] ?? '';
     $confirm_password = $_POST["confirm_password"] ?? '';
 
-    // 1. Vérification basique
     if (!$email || !$username || !$password) {
         $error = "Veuillez remplir tous les champs.";
     } elseif ($password !== $confirm_password) {
         $error = "Les mots de passe ne correspondent pas.";
     } else {
 
-        // 2. Préparer la requête vers l'API Node
         $data = json_encode([
             "email"    => $email,
             "username" => $username,
@@ -29,12 +27,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             "http" => [
                 "header"  => implode("\r\n", [
                     "Content-Type: application/json",
-                    "Content-Length: " . strlen($data),   // CORRECTION : header manquant
+                    "Content-Length: " . strlen($data),
                     "Accept: application/json",
                 ]),
                 "method"          => "POST",
                 "content"         => $data,
-                "ignore_errors"   => true,  // CORRECTION : récupérer la réponse même en cas d'erreur HTTP (4xx/5xx)
+                "ignore_errors"   => true,
             ]
         ];
 
@@ -62,11 +60,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 // Afficher le message d'erreur renvoyé par l'API
                 $error = $response["error"] ?? "Une erreur est survenue (code $statusCode).";
             } else {
-                $success = "Inscription réussie !";
-
                 if (isset($response["token"])) {
-                    $_SESSION["token"] = $response["token"];
+
+                    setcookie(
+                        "auth_token",
+                        $response["token"],
+                        [
+                            "expires" => time() + (7 * 24 * 60 * 60),
+                            "path" => "/",
+                            "secure" => false, // mettre true en HTTPS
+                            "httponly" => true,
+                            "samesite" => "Strict"
+                        ]
+                    );
                 }
+
                 if (isset($response["user"])) {
                     $_SESSION["user"] = $response["user"];
                 }

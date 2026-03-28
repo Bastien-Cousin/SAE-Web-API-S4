@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 $host     = getenv('POSTGRES_HOST')     ?: 'db';
 $port     = getenv('POSTGRES_PORT')     ?: '5432';
 $dbname   = getenv('POSTGRES_DB')       ?: 'sae_db';
