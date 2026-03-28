@@ -1,0 +1,114 @@
+/* --- Variables pour personnaliser facilement --- */
+:root {
+    --round-width: 220px;
+    --match-bg: #ffffff;
+    --border-color: #d1d5db;
+    --win-bg: #f0fdf4;
+    --win-text: #166534;
+    --accent-color: #3b82f6; /* Couleur des lignes de connexion */
+}
+
+body {
+    background-color: #f3f4f6;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --- Structure de l'Arbre --- */
+.bracket__wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 0;
+}
+
+.bracket {
+    display: flex;
+    gap: 50px; /* Espace pour les lignes entre les colonnes */
+}
+
+.round {
+    display: flex;
+    flex-direction: column;
+    width: var(--round-width);
+}
+
+.round__name {
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 800;
+    color: #6b7280;
+    margin-bottom: 30px;
+    font-size: 0.9rem;
+}
+
+.round__matches {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around; /* Aligne les matchs au centre des précédents */
+    flex-grow: 1;
+}
+
+/* --- Style des Matchs --- */
+.match-pair {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.match {
+    background: var(--match-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.team {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.2s;
+}
+
+.team:last-child { border-bottom: none; }
+
+.team__name {
+    font-size: 0.95rem;
+    color: #374151;
+}
+
+.team__score {
+    font-weight: bold;
+    background: #374151;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+/* --- État Gagnant --- */
+.team.winner {
+    background-color: var(--win-bg);
+}
+
+.team.winner .team__name {
+    color: var(--win-text);
+    font-weight: bold;
+}
+
+.team.winner .team__score {
+    background: var(--win-text);
+}
+
+/* --- Petite Finale --- */
+.bracket__third {
+    margin-top: 50px;
+    border-top: 2px dashed var(--border-color);
+    padding-top: 30px;
+    width: var(--round-width);
+}

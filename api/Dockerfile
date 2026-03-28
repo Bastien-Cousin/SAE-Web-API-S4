@@ -2,18 +2,27 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# 1. Dépendances
+# 1. Installer netcat pour vérifier postgres
+RUN apk add --no-cache netcat-openbsd
+
+# 2. Dépendances
 COPY package*.json ./
 RUN npm install
 
-# 2. Schéma Prisma (obligatoire avant generate)
+# 3. Schéma Prisma (obligatoire avant generate)
 COPY prisma ./prisma
 
-# 3. Génération du client Prisma
+# 4. Génération du client Prisma
 RUN npx prisma generate
 
-# 4. Code applicatif
+# 5. Code applicatif
 COPY . .
 
+# 6. Script d'entrypoint qui attend PostgreSQL
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh && \
+    sed -i 's/\r$//' /app/entrypoint.sh
+
 EXPOSE 3070
-CMD ["npm", "run", "dev"]
+
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]

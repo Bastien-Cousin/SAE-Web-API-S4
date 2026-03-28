@@ -43,6 +43,11 @@
     "tests",
     "node_modules",
     "dist",
-    "prisma.config.ts"
+    "prisma",
+    "prisma.config.ts",
+    "vitest.config.ts",
+    "check-logos.ts",
+    "check-seed.js",
+    "diagnose-db.ts"
   ]
 }

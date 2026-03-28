@@ -1,0 +1,93 @@
+    #bouton-retour {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        text-decoration: none;
+        color: black;
+        border-bottom: 1px solid #ccc;
+        border-right: 1px solid #ccc;
+        padding: 20px 25px;
+        border-bottom-right-radius: 10px;
+    }
+
+    #bouton-retour:hover {
+        border-bottom: 1px solid black;
+        border-right: 1px solid black;
+        background-color: #ccc;
+        transition: all 0.3s ease;
+    }
+
+    body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #fafafa;
+        font-family: Arial, sans-serif;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 400px;
+        padding: 25px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        background-color: white;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    p {
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    input {
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+
+    button {
+        padding: 10px;
+        border: 1px solid black;
+        border-radius: 5px;
+        background-color: #4CAF50;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #45a049;
+        transition: all 0.3s ease;
+    }
+
+.message {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.message.error {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef5350;
+}
+
+.message.success {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+    border: 1px solid #4caf50;
+}

@@ -1,3 +1,5 @@
+<?php session_start(); ?>
+
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -5,40 +7,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CS2 - Projet</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="components/ComponentNavbar/navbar.css">
+    <link rel="stylesheet" href="components/ComponentFooter/footer.css">
 </head>
 
 <body>
 
-    <?php include 'components/navbar.php'; ?>
+    <?php include 'components/ComponentNavbar/navbar.php'; ?>
 
-    <!-- HERO -->
     <section class="hero">
         <div class="container hero__content">
-            <h1 class="hero__title">Bienvenue sur CS2 - Projet</h1>
-            <p class="hero__subtitle">Votre source ultime pour les données, analyses et prédictions du monde compétitif de Counter-Strike 2.</p>
-            <br>
-            <a href="#features" class="btn btn--primary">Découvrir</a>
-        </div>
-
-        <div class="hero__scroll-hint">
-            <span></span>
-            <p>Scroll</p>
+            <h1 class="hero__title">Bienvenue sur Counter Data</h1>
+            <p class="hero__subtitle">
+                Retrouvez l'intégralité des statistiques concernant les équipes, les joueurs et les matchs de la scène
+                professionnelle Counter-Strike 2.
+            </p>
         </div>
     </section>
 
-    <!-- STATS BAND -->
     <div class="statsband">
         <div class="statsband__inner">
             <?php
+            $players_count = 'XX';
+            $teams_count = 'XX';
+            $tournaments_count = 'XX';
+
+            $host = getenv('POSTGRES_HOST') ?: 'db';
+            $port = getenv('POSTGRES_PORT') ?: '5432';
+            $dbname = getenv('POSTGRES_DB') ?: 'sae_db';
+            $user = getenv('POSTGRES_USER') ?: 'sae_user';
+            $password = getenv('POSTGRES_PASSWORD') ?: 'sae_password';
+
+            try {
+                $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password);
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+                $stmt_players = $pdo->query('SELECT COUNT(*) as count FROM player');
+                $result_players = $stmt_players->fetch(PDO::FETCH_ASSOC);
+                $players_count = $result_players['count'] ?? 'XX';
+
+                $stmt_teams = $pdo->query('SELECT COUNT(*) as count FROM team');
+                $result_teams = $stmt_teams->fetch(PDO::FETCH_ASSOC);
+                $teams_count = $result_teams['count'] ?? 'XX';
+
+                $stmt_tournaments = $pdo->query('SELECT COUNT(*) as count FROM tournament');
+                $result_tournaments = $stmt_tournaments->fetch(PDO::FETCH_ASSOC);
+                $tournaments_count = $result_tournaments['count'] ?? 'XX';
+            } catch (PDOException $e) {
+                error_log("Erreur stats : " . $e->getMessage());
+            }
+
             $stats = [
-                ['value' => '1.2M',  'label' => 'Joueurs en ligne'],
-                ['value' => '32',    'label' => 'Maps actives'],
-                ['value' => '128',   'label' => 'Tick rate'],
-                ['value' => 'TOP 5', 'label' => 'Tournois suivis'],
+                ['value' => $players_count, 'label' => 'Joueurs'],
+                ['value' => $teams_count, 'label' => 'Equipes'],
+                ['value' => '11', 'label' => 'Maps'],
+                ['value' => $tournaments_count, 'label' => 'Tournois'],
             ];
             foreach ($stats as $s): ?>
                 <div class="statsband__item">
@@ -49,104 +73,98 @@
         </div>
     </div>
 
-    <!-- FEATURES -->
-    <section class="features" id="features">
-        <div class="container">
-            <h2 class="section-title">Ce que vous trouverez ici</h2>
-            <p>Bienvenue sur notre plateforme, un espace pensé pour tous ceux qui veulent analyser, comprendre et anticiper les résultats des matchs avec précision.
-                Ici, vous ne trouverez pas de prédictions aléatoires ou de simples intuitions : notre système vous permet de générer des prévisions personnalisées, basées sur les paramètres que vous choisissez.
-
-                Que vous soyez passionné de sport, amateur de statistiques ou simplement curieux, notre outil vous aide à visualiser les tendances d’un match selon différents critères : forme des équipes, performances récentes, historique des confrontations, style de jeu, et bien plus encore.
-
-                Notre objectif est simple :
-                vous offrir une manière claire, intuitive et intelligente d’explorer les scénarios possibles d’une rencontre sportive.
-
-                Analysez. Comparez. Prédisez.
-                Votre vision du match commence ici.</p>
-            <br>
-
-            <?php
-            $features = [
-                [
-                    'icon'  => '🏆',
-                    'title' => 'Tournois',
-                    'desc'  => 'Suivez l\'arbre complet des tournois professionnels en temps réel, round par round.',
-                    'link'  => './pages/ArbreTournoi.php',
-                    'cta'   => 'Voir l\'arbre',
-                ],
-                [
-                    'icon'  => '📊',
-                    'title' => 'Données',
-                    'desc'  => 'Stats détaillées par équipe, joueur et map. Win rates, clutch rates, ratings HLTV.',
-                    'link'  => '#',
-                    'cta'   => 'Explorer',
-                ],
-                [
-                    'icon'  => '🤖',
-                    'title' => 'Prédictions',
-                    'desc'  => 'Algorithmes de prédiction basés sur les performances récentes et l\'historique des confrontations.',
-                    'link'  => '#',
-                    'cta'   => 'Prédire',
-                ],
-            ];
-            ?>
-
-            <div class="features__grid">
-                <?php foreach ($features as $i => $f): ?>
-                    <article class="card" style="--i: <?= $i ?>">
-                        <div class="card__icon"><?= $f['icon'] ?></div>
-                        <h3 class="card__title"><?= htmlspecialchars($f['title']) ?></h3>
-                        <p class="card__desc"><?= htmlspecialchars($f['desc']) ?></p>
-                        <a href="<?= htmlspecialchars($f['link']) ?>" class="card__link">
-                            <?= htmlspecialchars($f['cta']) ?> <span>→</span>
-                        </a>
-                    </article>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </section>
-
-    <!-- PROCHAINS MATCHS -->
     <section class="upcoming">
         <div class="container">
-            <h2 class="section-title">Prochains matchs</h2>
+            <h2 class="section-title">Matchs récents</h2>
 
             <?php
-            $matches = [
-                ['t1' => 'Vitality',  't2' => 'FaZe Clan', 'event' => 'ESL Pro League', 'date' => "Aujourd'hui 19:00"],
-                ['t1' => 'NaVi',      't2' => 'G2',         'event' => 'BLAST Premier',  'date' => 'Demain 17:30'],
-                ['t1' => 'Spirit',    't2' => 'ENCE',        'event' => 'IEM Cologne',    'date' => '26 Mar 20:00'],
-            ];
+            $matches = [];
+
+            try {
+                $stmt_matches = $pdo->query("
+                    SELECT 
+                        m.date,
+                        m.tournament,
+                        m.match2opponents,
+                        t1.name AS team1_name,
+                        t2.name AS team2_name
+                    FROM match m
+                    LEFT JOIN team t1 ON m.team1_id = t1.pageid
+                    LEFT JOIN team t2 ON m.team2_id = t2.pageid
+                    WHERE m.finished = true
+                    ORDER BY m.date DESC
+                    LIMIT 3
+                ");
+
+                $matches = $stmt_matches->fetchAll(PDO::FETCH_ASSOC);
+
+            } catch (PDOException $e) {
+                error_log("Erreur matchs : " . $e->getMessage());
+            }
             ?>
 
             <div class="upcoming__list">
-                <?php foreach ($matches as $m): ?>
+                <?php foreach ($matches as $m):
+
+                    $team1 = $m['team1_name'];
+                    $team2 = $m['team2_name'];
+
+                    if ((!$team1 || !$team2) && !empty($m['match2opponents'])) {
+                        $opponents = json_decode($m['match2opponents'], true);
+
+                        if (isset($opponents[0]['name']))
+                            $team1 = $opponents[0]['name'];
+                        if (isset($opponents[1]['name']))
+                            $team2 = $opponents[1]['name'];
+                    }
+
+                    $team1 = $team1 ?: 'N/A';
+                    $team2 = $team2 ?: 'N/A';
+
+                    $date = $m['date']
+                        ? date('d/m/Y H:i', strtotime($m['date']))
+                        : 'Date inconnue';
+
+                    ?>
                     <div class="upcoming__row">
-                        <span class="upcoming__event"><?= htmlspecialchars($m['event']) ?></span>
+                        <span class="upcoming__event">
+                            <?= htmlspecialchars($m['tournament'] ?? 'Inconnu') ?>
+                        </span>
+
                         <div class="upcoming__teams">
-                            <span class="upcoming__team"><?= htmlspecialchars($m['t1']) ?></span>
+                            <span class="upcoming__team">
+                                <?= htmlspecialchars($team1) ?>
+                            </span>
+
                             <span class="upcoming__vs">VS</span>
-                            <span class="upcoming__team"><?= htmlspecialchars($m['t2']) ?></span>
+
+                            <span class="upcoming__team">
+                                <?= htmlspecialchars($team2) ?>
+                            </span>
                         </div>
-                        <span class="upcoming__date"><?= htmlspecialchars($m['date']) ?></span>
-                        <a href="#" class="btn btn--xs">Prédire</a>
+
+                        <span class="upcoming__date"><?= $date ?></span>
+
+                        <a href="../pages/PageAccueilMatch/AccueilMatch.php" class="btn btn--xs">Voir</a>
                     </div>
                 <?php endforeach; ?>
             </div>
         </div>
     </section>
 
-    <?php include 'components/footer.php'; ?>
+    <?php include 'components/ComponentFooter/footer.php'; ?>
 
     <script>
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(e => {
-                if (e.isIntersecting) e.target.classList.add('is-visible');
+                if (e.isIntersecting) {
+                    e.target.classList.add('is-visible');
+                }
             });
-        }, {
-            threshold: 0.15
-        });
-        document.querySelectorAll('.card, .upcoming__row').forEach(el => observer.observe(el));
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('.upcoming__row')
+            .forEach(el => observer.observe(el));
     </script>
 
 </body>

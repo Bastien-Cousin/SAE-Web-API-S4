@@ -1,0 +1,1332 @@
+openapi: 3.0.0
+info:
+  title: Esports API - SAE BUT2
+  description: |
+    API complète pour gérer les équipes, joueurs et matchs de Counter-Strike.
+    Inclut l'authentification JWT et la gestion des utilisateurs.
+  version: 1.0.0
+  contact:
+    name: Support API
+    email: support@sae-esports.fr
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3070/api
+    description: Local Development
+  - url: https://sae-web-but2-groupe7.jrcan.dev/api
+    description: Production
+
+tags:
+  - name: Health
+    description: Vérification de santé de l'API
+  - name: Authentication
+    description: Authentification et gestion des utilisateurs
+  - name: Teams
+    description: Opérations sur les équipes
+  - name: Players
+    description: Opérations sur les joueurs
+  - name: Matches
+    description: Opérations sur les matchs
+  - name: Tournaments
+    description: Opérations sur les tournois
+  - name: Predictions
+    description: Opérations sur les prédictions de matchs
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Vérifier la santé de l'API
+      description: Vérifie que l'API et la base de données sont opérationnelles
+      operationId: getHealth
+      responses:
+        '200':
+          description: API et base de données en bon état
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  api:
+                    type: string
+                    example: up
+                  database:
+                    type: string
+                    example: up
+        '503':
+          description: La base de données n'est pas disponible
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  api:
+                    type: string
+                    example: up
+                  database:
+                    type: string
+                    example: down
+
+  /auth/sign-up:
+    post:
+      tags:
+        - Authentication
+      summary: Créer un nouveau compte utilisateur
+      description: Inscrit un nouvel utilisateur et retourne un JWT valide pour 7 jours
+      operationId: signUp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - username
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                username:
+                  type: string
+                  minLength: 1
+                  example: JohnDoe
+                password:
+                  type: string
+                  minLength: 1
+                  example: SecurePassword123!
+      responses:
+        '201':
+          description: Utilisateur créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User created successfully
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Données manquantes ou invalides
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Email, username, and password are required
+        '409':
+          description: L'email est déjà utilisé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Email already registered
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal server error
+
+  /auth/sign-in:
+    post:
+      tags:
+        - Authentication
+      summary: Se connecter avec email et mot de passe
+      description: Authentifie un utilisateur et retourne un JWT
+      operationId: signIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  example: SecurePassword123!
+      responses:
+        '200':
+          description: Authentification réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Login successful
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Email ou mot de passe manquant
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Email and password are required
+        '401':
+          description: Identifiants invalides
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid email or password
+        '500':
+          description: Erreur serveur
+
+  /teams:
+    get:
+      tags:
+        - Teams
+      summary: Récupérer toutes les équipes
+      description: Retourne une liste paginée de toutes les équipes
+      operationId: getAllTeams
+      parameters:
+        - name: skip
+          in: query
+          description: Nombre d'équipes à sauter (pour la pagination)
+          schema:
+            type: integer
+            default: 0
+        - name: take
+          in: query
+          description: Nombre d'équipes à retourner
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Liste des équipes récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Team'
+                  pagination:
+                    type: object
+                    properties:
+                      skip:
+                        type: integer
+                      take:
+                        type: integer
+                      total:
+                        type: integer
+
+  /teams/{id}:
+    get:
+      tags:
+        - Teams
+      summary: Récupérer une équipe par ID
+      description: Retourne les détails d'une équipe spécifique
+      operationId: getTeamById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de l'équipe (pageid)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Équipe trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '404':
+          description: Équipe non trouvée
+
+  /teams/search:
+    get:
+      tags:
+        - Teams
+      summary: Rechercher des équipes
+      description: Recherche des équipes par nom ou région
+      operationId: searchTeams
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Termes de recherche (nom ou objectname)
+          schema:
+            type: string
+        - name: region
+          in: query
+          description: Filtrer par région (ex eu, na, kr)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Résultats de recherche
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Team'
+
+  /players:
+    get:
+      tags:
+        - Players
+      summary: Récupérer tous les joueurs
+      description: Retourne une liste paginée de tous les joueurs
+      operationId: getAllPlayers
+      parameters:
+        - name: skip
+          in: query
+          description: Nombre de joueurs à sauter (pour la pagination)
+          schema:
+            type: integer
+            default: 0
+        - name: take
+          in: query
+          description: Nombre de joueurs à retourner
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Liste des joueurs récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Player'
+                  pagination:
+                    type: object
+                    properties:
+                      skip:
+                        type: integer
+                      take:
+                        type: integer
+                      total:
+                        type: integer
+
+  /players/{id}:
+    get:
+      tags:
+        - Players
+      summary: Récupérer un joueur par ID
+      description: Retourne les détails d'un joueur spécifique
+      operationId: getPlayerById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID du joueur (pageid)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Joueur trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Player'
+        '404':
+          description: Joueur non trouvé
+
+  /players/team/{teamId}:
+    get:
+      tags:
+        - Players
+      summary: Récupérer les joueurs d'une équipe
+      description: Retourne tous les joueurs d'une équipe spécifique
+      operationId: getPlayersByTeam
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          description: ID de l'équipe (pageid)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Liste des joueurs de l'équipe
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Player'
+
+  /players/search:
+    get:
+      tags:
+        - Players
+      summary: Rechercher des joueurs
+      description: Recherche des joueurs par nom ou nationalité
+      operationId: searchPlayers
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Termes de recherche (nom ou objectname)
+          schema:
+            type: string
+        - name: nationality
+          in: query
+          description: Filtrer par nationalité (code ISO 2 lettres)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Résultats de recherche
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Player'
+
+  /matches:
+    get:
+      tags:
+        - Matches
+      summary: Récupérer tous les matchs
+      description: Retourne une liste paginée de tous les matchs
+      operationId: getAllMatches
+      parameters:
+        - name: skip
+          in: query
+          description: Nombre de matchs à sauter (pour la pagination)
+          schema:
+            type: integer
+            default: 0
+        - name: take
+          in: query
+          description: Nombre de matchs à retourner
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Liste des matchs récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Match'
+                  pagination:
+                    type: object
+                    properties:
+                      skip:
+                        type: integer
+                      take:
+                        type: integer
+                      total:
+                        type: integer
+
+  /matches/{id}:
+    get:
+      tags:
+        - Matches
+      summary: Récupérer un match par ID
+      description: Retourne les détails d'un match spécifique
+      operationId: getMatchById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID du match (pageid)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Match trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+        '404':
+          description: Match non trouvé
+
+  /matches/recent:
+    get:
+      tags:
+        - Matches
+      summary: Récupérer les matchs récents
+      description: Retourne les matchs les plus récents (par date)
+      operationId: getRecentMatches
+      parameters:
+        - name: limit
+          in: query
+          description: Nombre de matchs à retourner
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Matchs récents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Match'
+
+  /matches/team/{teamId}:
+    get:
+      tags:
+        - Matches
+      summary: Récupérer les matchs d'une équipe
+      description: Retourne tous les matchs d'une équipe spécifique
+      operationId: getMatchesByTeam
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          description: ID de l'équipe (pageid)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Liste des matchs de l'équipe
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Match'
+
+  /matches/search:
+    get:
+      tags:
+        - Matches
+      summary: Rechercher des matchs
+      description: Recherche des matchs par tournoi ou équipe
+      operationId: searchMatches
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Termes de recherche (tournoi, équipe)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Résultats de recherche
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Match'
+
+  /tournaments:
+    get:
+      tags:
+        - Tournaments
+      summary: Récupérer tous les tournois
+      description: Retourne la liste paginée de tous les tournois
+      operationId: getAllTournaments
+      parameters:
+        - name: skip
+          in: query
+          description: Nombre de tournois à sauter (pagination)
+          schema:
+            type: integer
+            default: 0
+        - name: take
+          in: query
+          description: Nombre de tournois à retourner
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Liste des tournois
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tournament'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      skip:
+                        type: integer
+                      take:
+                        type: integer
+
+  /tournaments/search:
+    get:
+      tags:
+        - Tournaments
+      summary: Rechercher des tournois
+      description: Recherche des tournois par nom ou identifiant
+      operationId: searchTournaments
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Termes de recherche
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Résultats de recherche
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tournament'
+
+  /tournaments/year/{year}:
+    get:
+      tags:
+        - Tournaments
+      summary: Récupérer les tournois par année
+      description: Retourne tous les tournois d'une année spécifique
+      operationId: getTournamentsByYear
+      parameters:
+        - name: year
+          in: path
+          required: true
+          description: Année (YYYY)
+          schema:
+            type: string
+            example: "2024"
+      responses:
+        '200':
+          description: Tournois de l'année
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tournament'
+
+  /tournaments/{id}:
+    get:
+      tags:
+        - Tournaments
+      summary: Récupérer un tournoi par ID
+      description: Retourne les détails d'un tournoi spécifique
+      operationId: getTournamentById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID du tournoi (pageid)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Détails du tournoi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tournament'
+        '404':
+          description: Tournoi non trouvé
+
+  /tournaments/stats/{id}:
+    get:
+      tags:
+        - Tournaments
+      summary: Récupérer les statistiques d'un tournoi
+      description: Retourne les statistiques (matchs, équipes, joueurs) d'un tournoi
+      operationId: getTournamentStats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID du tournoi (pageid)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Statistiques du tournoi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Tournament'
+                  - type: object
+                    properties:
+                      stats:
+                        type: object
+                        properties:
+                          totalMatches:
+                            type: integer
+                          totalTeams:
+                            type: integer
+                          totalPlayers:
+                            type: integer
+
+  /predictions:
+    post:
+      tags:
+        - Predictions
+      summary: Créer une nouvelle prédiction
+      description: Crée une prédiction pour un match avec jusqu'à 5 jeux
+      operationId: createPrediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - match_id
+                - predicted_winner
+                - games
+              properties:
+                user_id:
+                  type: integer
+                  example: 1
+                match_id:
+                  type: string
+                  format: bigint
+                  example: "123456789"
+                predicted_winner:
+                  type: integer
+                  enum: [1, 2]
+                  example: 1
+                confidence:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                  nullable: true
+                  example: 85
+                games:
+                  type: array
+                  minItems: 5
+                  maxItems: 5
+                  items:
+                    type: object
+                    properties:
+                      game_number:
+                        type: integer
+                        enum: [1, 2, 3, 4, 5]
+                      map:
+                        type: string
+                        nullable: true
+                        example: "Inferno"
+                      team1_score:
+                        type: integer
+                        nullable: true
+                        example: 16
+                      team2_score:
+                        type: integer
+                        nullable: true
+                        example: 14
+                      predicted_winner:
+                        type: integer
+                        enum: [1, 2]
+                        nullable: true
+                        example: 1
+      responses:
+        '201':
+          description: Prédiction créée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+        '400':
+          description: Données invalides ou manquantes
+        '409':
+          description: Prédiction déjà existante pour ce match
+        '500':
+          description: Erreur serveur
+
+    get:
+      tags:
+        - Predictions
+      summary: Récupérer les prédictions avec pagination
+      operationId: getPredictions
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: take
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Liste des prédictions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Prediction'
+        '500':
+          description: Erreur serveur
+
+  /predictions/{id}:
+    get:
+      tags:
+        - Predictions
+      summary: Récupérer une prédiction par ID
+      operationId: getPredictionById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Prédiction trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+        '400':
+          description: ID invalide
+        '404':
+          description: Prédiction non trouvée
+        '500':
+          description: Erreur serveur
+
+    patch:
+      tags:
+        - Predictions
+      summary: Mettre à jour une prédiction
+      operationId: updatePrediction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                predicted_winner:
+                  type: integer
+                  enum: [1, 2]
+                confidence:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                  nullable: true
+                games:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      game_number:
+                        type: integer
+                      map:
+                        type: string
+                        nullable: true
+                      team1_score:
+                        type: integer
+                        nullable: true
+                      team2_score:
+                        type: integer
+                        nullable: true
+                      predicted_winner:
+                        type: integer
+                        nullable: true
+      responses:
+        '200':
+          description: Prédiction mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+        '400':
+          description: ID invalide
+        '404':
+          description: Prédiction non trouvée
+        '500':
+          description: Erreur serveur
+
+    delete:
+      tags:
+        - Predictions
+      summary: Supprimer une prédiction
+      operationId: deletePrediction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Prédiction supprimée
+        '400':
+          description: ID invalide
+        '404':
+          description: Prédiction non trouvée
+        '500':
+          description: Erreur serveur
+
+  /predictions/user/{userId}:
+    get:
+      tags:
+        - Predictions
+      summary: Récupérer les prédictions d'un utilisateur
+      operationId: getPredictionsByUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Liste des prédictions de l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Prediction'
+        '400':
+          description: ID utilisateur invalide
+        '500':
+          description: Erreur serveur
+
+  /predictions/match/{matchId}:
+    get:
+      tags:
+        - Predictions
+      summary: Récupérer les prédictions pour un match
+      operationId: getPredictionsByMatch
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: bigint
+      responses:
+        '200':
+          description: Liste des prédictions pour le match
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Prediction'
+        '400':
+          description: ID match invalide
+        '500':
+          description: Erreur serveur
+
+components:
+  schemas:
+    Team:
+      type: object
+      properties:
+        pageid:
+          type: string
+          format: bigint
+          example: "1"
+        pagename:
+          type: string
+          nullable: true
+        objectname:
+          type: string
+          example: fnatic
+        name:
+          type: string
+          example: Fnatic
+        region:
+          type: string
+          example: eu
+        logourl:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://liquipedia.net/commons/images/fnatic_logo.png"
+        textlesslogourl:
+          type: string
+          format: uri
+          nullable: true
+          description: URL du logo sans texte
+        logodarkurl:
+          type: string
+          format: uri
+          nullable: true
+          description: URL du logo version sombre
+        textlesslogodarkurl:
+          type: string
+          format: uri
+          nullable: true
+        status:
+          type: string
+          example: Active
+        earnings:
+          type: string
+          format: bigint
+          nullable: true
+          example: "500000"
+        links:
+          type: object
+          nullable: true
+          description: Liens externes (site web, réseaux sociaux)
+
+    Player:
+      type: object
+      properties:
+        pageid:
+          type: string
+          format: bigint
+          example: "100"
+        objectname:
+          type: string
+          example: flusha
+        name:
+          type: string
+          example: Freddy Wersén
+        nationality:
+          type: string
+          example: se
+          description: Code pays ISO (2 lettres)
+        team_id:
+          type: string
+          format: bigint
+          nullable: true
+          example: "1"
+        status:
+          type: string
+          example: Active
+        birthdate:
+          type: string
+          format: date
+          nullable: true
+        earnings:
+          type: integer
+          nullable: true
+        links:
+          type: object
+          nullable: true
+          description: Liens externes (réseaux sociaux)
+
+    Match:
+      type: object
+      properties:
+        pageid:
+          type: string
+          format: bigint
+          example: "200"
+        objectname:
+          type: string
+          nullable: true
+        tournament:
+          type: string
+          nullable: true
+          example: ESL Pro League
+        team1_id:
+          type: string
+          format: bigint
+          nullable: true
+          description: ID de la première équipe
+        team2_id:
+          type: string
+          format: bigint
+          nullable: true
+          description: ID de la deuxième équipe
+        date:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          example: completed
+        winner:
+          type: string
+          nullable: true
+          example: team1
+        finished:
+          type: boolean
+          example: true
+        bestof:
+          type: integer
+          example: 3
+        vod:
+          type: string
+          format: uri
+          nullable: true
+          description: Lien vers la vidéo du match
+
+    Tournament:
+      type: object
+      properties:
+        pageid:
+          type: string
+          format: bigint
+          example: "1000"
+        pagename:
+          type: string
+          nullable: true
+        objectname:
+          type: string
+          example: The International 2024
+        name:
+          type: string
+          nullable: true
+          example: The International 2024
+        shortname:
+          type: string
+          nullable: true
+          example: TI10
+        tickername:
+          type: string
+          nullable: true
+        banner:
+          type: string
+          nullable: true
+        bannerurl:
+          type: string
+          format: uri
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+        iconurl:
+          type: string
+          format: uri
+          nullable: true
+        type:
+          type: string
+          nullable: true
+          example: Invitational
+        game:
+          type: string
+          nullable: true
+          example: Counter-Strike 2
+        mode:
+          type: string
+          nullable: true
+          example: "5v5"
+        startdate:
+          type: string
+          format: date
+          nullable: true
+        enddate:
+          type: string
+          format: date
+          nullable: true
+        prizepool:
+          type: integer
+          format: int64
+          nullable: true
+          example: 5000000
+        participantsnumber:
+          type: integer
+          nullable: true
+          example: 16
+        status:
+          type: string
+          nullable: true
+          example: Finished
+        liquipediatier:
+          type: string
+          nullable: true
+          example: S-Tier
+        organizers:
+          type: string
+          nullable: true
+        locations:
+          type: object
+          nullable: true
+          description: Lieu d'organisation
+        format:
+          type: string
+          nullable: true
+          example: Double Elimination
+        sponsors:
+          type: string
+          nullable: true
+        stream:
+          type: object
+          nullable: true
+          description: Informations de diffusion en direct
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: JohnDoe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+
+    Prediction:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        match_id:
+          type: string
+          format: bigint
+          example: "123456789"
+        predicted_winner:
+          type: integer
+          enum: [1, 2]
+          example: 1
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          example: 85
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-27T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-03-27T10:30:00Z"
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            username:
+              type: string
+        match:
+          type: object
+          properties:
+            pageid:
+              type: string
+              format: bigint
+            objectname:
+              type: string
+            date:
+              type: string
+              format: date-time
+        prediction_games:
+          type: array
+          items:
+            $ref: '#/components/schemas/PredictionGame'
+
+    PredictionGame:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        prediction_id:
+          type: integer
+          example: 1
+        game_number:
+          type: integer
+          enum: [1, 2, 3, 4, 5]
+          example: 1
+        map:
+          type: string
+          nullable: true
+          example: "Inferno"
+        team1_score:
+          type: integer
+          nullable: true
+          example: 16
+        team2_score:
+          type: integer
+          nullable: true
+          example: 14
+        predicted_winner:
+          type: integer
+          enum: [1, 2]
+          nullable: true
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-27T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-03-27T10:30:00Z"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Authentification JWT. Obtenu via /auth/sign-up ou /auth/sign-in
+
+security:
+  - BearerAuth: []

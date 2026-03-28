@@ -3,3 +3,13 @@ node_modules
 .env
 
 /src/generated/prisma
+coverage/
+dist/
+
+# Public assets (téléchargés depuis Liquipedia - ne pas committer)
+public/assets/teams/**/*.png
+public/assets/teams/**/*.svg
+public/assets/teams/**/*.jpg
+public/assets/tournaments/**/*.png
+public/assets/tournaments/**/*.svg
+public/assets/tournaments/**/*.jpg
