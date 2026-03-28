@@ -15,16 +15,65 @@ Les étudiants travailleront **en groupe de 3 à 5**, via **GitHub**, et devront
 
 ### Installation et lancement
 
+#### ⚡ Méthode rapide (recommandée)
+
 1. **Démarrer les conteneurs Docker** :
    ```bash
    docker compose up -d
    ```
 
-2. **Importer les données** (une fois seulement) :
+2. **Initialiser le projet complètement** (une seule commande) :
    ```bash
-   docker compose exec api npx tsx ./src/import_matches/equipes_cs.ts
-   docker compose exec api npx tsx ./src/import_matches/joueurs_cs.ts
-   docker compose exec api npx tsx ./src/import_matches/matchs_cs.ts
+   docker compose exec api npm run setup
+   ```
+   
+   Cette commande effectue **automatiquement** :
+   - ✅ Migrations de la base de données
+   - ✅ Génération du client Prisma
+   - ✅ Ensemencement initial (seed)
+   - ✅ Import des équipes (Liquipedia API)
+   - ✅ Import des joueurs (Liquipedia API)
+   - ✅ Import des matchs (Liquipedia API)
+   - ✅ Import des tournois (Liquipedia API)
+   - ✅ Téléchargement des logos d'équipes
+   - ✅ Correction des URLs des logos
+   - ✅ Téléchargement des bannières de tournois
+   - ✅ Réinitialisation des URLs de tournois
+
+3. **Accéder à l'application** :
+   - 🌐 Web : http://localhost:8080
+   - 🔌 API : http://localhost:3070
+   - 🗄️ PostgreSQL : localhost:5432
+
+#### 📋 Méthode manuelle (étape par étape)
+
+Si vous préférez exécuter les commandes individuellement :
+
+1. **Démarrer les conteneurs Docker** :
+   ```bash
+   docker compose up -d
+   ```
+
+2. **Exécuter les étapes séparément** :
+   ```bash
+   # Migrations et Prisma
+   docker compose exec api npm run db:migrate
+   docker compose exec api npm run db:generate
+   
+   # Ensemencement initial
+   docker compose exec api npm run db:seed
+   
+   # Imports de données depuis Liquipedia
+   docker compose exec api npm run import:teams
+   docker compose exec api npm run import:players
+   docker compose exec api npm run import:matches
+   docker compose exec api npm run import:tournament
+   
+   # Téléchargement d'assets
+   docker compose exec api npm run download:team-logos
+   docker compose exec api npm run fix:team-urls
+   docker compose exec api npm run download:tournament-assets
+   docker compose exec api npm run reset:tournament-urls
    ```
 
 3. **Accéder à l'application** :

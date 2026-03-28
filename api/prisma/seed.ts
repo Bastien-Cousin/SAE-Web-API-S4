@@ -36,10 +36,10 @@ async function main() {
         update: {},
         create: {
             pageid: BigInt(1),
-            objectname: 'fnatic',
-            name: 'Fnatic',
+            objectname: 'team_alpha',
+            name: 'Team Alpha',
             region: 'eu',
-            logo: 'https://example.com/fnatic.png',
+            logo: 'https://example.com/team_alpha.png',
             status: 'Active',
         },
     })
@@ -49,10 +49,10 @@ async function main() {
         update: {},
         create: {
             pageid: BigInt(2),
-            objectname: 'navi',
-            name: 'Natus Vincere',
+            objectname: 'team_beta',
+            name: 'Team Beta',
             region: 'eu',
-            logo: 'https://example.com/navi.png',
+            logo: 'https://example.com/team_beta.png',
             status: 'Active',
         },
     })
@@ -103,11 +103,11 @@ async function main() {
         update: {},
         create: {
             pageid: BigInt(1000),
-            objectname: 'fnatic-vs-navi-2024-01',
+            objectname: 'team_alpha-vs-team_beta-2024-01',
             team1_id: team1.pageid,
             team2_id: team2.pageid,
             status: 'Completed',
-            winner: 'fnatic',
+            winner: 'team_alpha',
             finished: true,
             date: new Date('2024-01-15'),
         },

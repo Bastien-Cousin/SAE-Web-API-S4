@@ -5,7 +5,7 @@ function renderTournament($image, $name, $cashprize, $link = "#")
     ?>
     <a href="<?= $link ?>?name=<?= $urlName ?>" class="tournament-card">
         <div class="card-image">
-            <img src="https://i.postimg.cc/WzVwqT3n/fond-CS.jpg" alt="Image du tournoi">
+            <img src="<?= htmlspecialchars($image) ?>" alt="Image du tournoi">
         </div>
         <div class="card-content">
             <h3><?= $name ?></h3>
