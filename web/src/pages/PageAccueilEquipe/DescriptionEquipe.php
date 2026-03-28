@@ -59,14 +59,31 @@ $equipe = [
 
 function getPseudoFromObjectName($objectname)
 {
-    $parts = explode('_player_', $objectname);
-    return $parts[1] ?? $objectname;
+    $objectname = (string) $objectname;
+
+    // Format des joueurs créés manuellement: player_pseudo_1774714877740
+    if (preg_match('/^player_(.+)_\d{10,}$/', $objectname, $matches)) {
+        return $matches[1];
+    }
+
+    if (strpos($objectname, '_') !== false) {
+        $parts = explode('_', $objectname);
+        $lastPart = end($parts);
+        return $lastPart !== false ? (string) $lastPart : $objectname;
+    }
+
+    return $objectname;
 }
 
 $joueursEquipe = array_map(function ($player) {
+    $pseudo = trim((string) ($player['localizedname'] ?? ''));
+    if ($pseudo === '') {
+        $pseudo = getPseudoFromObjectName($player['objectname'] ?? 'N/A');
+    }
+
     return [
         'pays' => $player['nationality'] ?? 'N/A',
-        'pseudo' => getPseudoFromObjectName($player['objectname'] ?? 'N/A'),
+        'pseudo' => $pseudo,
         'nom_prenom' => $player['name'] ?? 'N/A',
         'age' => $player['birthdate'] ? date('Y') - date('Y', strtotime($player['birthdate'])) : 'N/A',
         'statut' => $player['status'] ?? 'Actif',

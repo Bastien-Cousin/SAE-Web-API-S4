@@ -5,12 +5,31 @@ $user = requireAuth();
 $error = null;
 $teams = [];
 
-$teamsResult = @file_get_contents('http://api:3070/api/teams?skip=0&take=1000');
-if ($teamsResult !== false) {
-    $teamsResponse = json_decode($teamsResult, true);
-    if (isset($teamsResponse['data']) && is_array($teamsResponse['data'])) {
-        $teams = $teamsResponse['data'];
+$skip = 0;
+$take = 500;
+
+while (true) {
+    $teamsResult = @file_get_contents("http://api:3070/api/teams?skip=$skip&take=$take");
+    if ($teamsResult === false) {
+        break;
     }
+
+    $teamsResponse = json_decode($teamsResult, true);
+    $chunk = (isset($teamsResponse['data']) && is_array($teamsResponse['data']))
+        ? $teamsResponse['data']
+        : [];
+
+    if (empty($chunk)) {
+        break;
+    }
+
+    $teams = array_merge($teams, $chunk);
+
+    if (count($chunk) < $take) {
+        break;
+    }
+
+    $skip += $take;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -112,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="number" id="age" name="age" min="10" max="100" required value="<?= htmlspecialchars($_POST['age'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 
             <label for="team_id">Équipe (optionnel)</label>
+            <input type="text" id="team_search" placeholder="Rechercher une équipe...">
             <select id="team_id" name="team_id">
                 <option value="">Aucune équipe</option>
                 <?php foreach ($teams as $team): ?>
@@ -155,6 +175,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <button type="submit">Ajouter le joueur</button>
         </form>
+
+        <script>
+            function buildOptionsCache(selectEl) {
+                return Array.from(selectEl.options).map((opt) => ({
+                    value: opt.value,
+                    text: opt.text,
+                    selected: opt.selected,
+                }));
+            }
+
+            function applyFilter(selectEl, cache, term) {
+                const query = term.trim().toLowerCase();
+                const currentValue = selectEl.value;
+
+                selectEl.innerHTML = '';
+
+                cache.forEach((opt) => {
+                    if (!query || opt.text.toLowerCase().includes(query) || opt.value === '') {
+                        const option = document.createElement('option');
+                        option.value = opt.value;
+                        option.textContent = opt.text;
+                        selectEl.appendChild(option);
+                    }
+                });
+
+                // Restaurer la valeur sélectionnée si elle est toujours visible.
+                selectEl.value = currentValue;
+            }
+
+            const teamSelect = document.getElementById('team_id');
+            const teamSearch = document.getElementById('team_search');
+
+            const teamOptionsCache = buildOptionsCache(teamSelect);
+
+            teamSearch.addEventListener('input', (e) => {
+                applyFilter(teamSelect, teamOptionsCache, e.target.value);
+            });
+        </script>
     </body>
 
 </html>
