@@ -24,14 +24,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'earnings' => $argent,
         ]);
 
+        $token = $_COOKIE['auth_token'] ?? null;
+        
+        $headers = [
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($payload),
+            'Accept: application/json',
+        ];
+        
+        if ($token) {
+            $headers[] = "Authorization: Bearer $token";
+        }
+        
         $options = [
             'http' => [
                 'method' => 'POST',
-                'header' => implode("\r\n", [
-                    'Content-Type: application/json',
-                    'Content-Length: ' . strlen($payload),
-                    'Accept: application/json',
-                ]),
+                'header' => implode("\r\n", $headers),
                 'content' => $payload,
                 'ignore_errors' => true,
             ],
