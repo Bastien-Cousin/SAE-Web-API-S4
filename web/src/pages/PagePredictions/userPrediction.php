@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . "/../../utils/auth.php";
-$user = requireAuth();
+$connectedUser = requireAuth();
 
 $team1_id = $_GET['team1_id'] ?? '';
 $team2_id = $_GET['team2_id'] ?? '';
@@ -20,11 +20,11 @@ $isEdit = isset($_GET['edit']);
 $host = getenv('POSTGRES_HOST') ?: 'db';
 $port = getenv('POSTGRES_PORT') ?: '5432';
 $dbname = getenv('POSTGRES_DB') ?: 'sae_db';
-$user = getenv('POSTGRES_USER') ?: 'sae_user';
+$dbUser = getenv('POSTGRES_USER') ?: 'sae_user';
 $password = getenv('POSTGRES_PASSWORD') ?: 'sae_password';
 
 try {
-    $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password);
+    $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $dbUser, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die("❌ Erreur de connexion : " . $e->getMessage());
@@ -32,6 +32,7 @@ try {
 
 function resolvePredictionUserId(PDO $pdo): int
 {
+    // L'utilisateur connecté avec JWT
     if (isset($_SESSION['user']['id'])) {
         return (int) $_SESSION['user']['id'];
     }
@@ -390,308 +391,308 @@ $params = http_build_query([
 
         <script>
             const TEAM1_ID = <?= json_encode($team1_id) ?>;
-                                                                    const TEAM2_ID = <?= json_encode($team2_id) ?>;
-                                                                    const TEAM1_NAME = <?= json_encode($team1_name) ?>;
-                                                                    const TEAM2_NAME = <?= json_encode($team2_name) ?>;
-                                                                    const MAPS_DATA = <?= json_encode($maps) ?>;
-                                                            
-                                                                    function computeUserBias() {
-                                                                        let wins1 = 0;
-                                                                        let wins2 = 0;
-                                                            
-                                                                        const rows = document.querySelectorAll('#maps-tbody tr');
-                                                            
-                                                                        if (rows.length > 0) {
-                                                                            rows.forEach((row) => {
-                                                                                const inputT1 = row.querySelector('.score_t1');
-                                                                                const inputT2 = row.querySelector('.score_t2');
-                                                            
-                                                                                let s1;
-                                                                                let s2;
-                                                            
-                                                                                if (inputT1 && inputT2) {
-                                                                                    s1 = parseInt(inputT1.value);
-                                                                                    s2 = parseInt(inputT2.value);
-                                                                                } else {
-                                                                                    s1 = parseInt(row.cells[1]?.textContent?.trim());
-                                                                                    s2 = parseInt(row.cells[3]?.textContent?.trim());
+                                                                                const TEAM2_ID = <?= json_encode($team2_id) ?>;
+                                                                                const TEAM1_NAME = <?= json_encode($team1_name) ?>;
+                                                                                const TEAM2_NAME = <?= json_encode($team2_name) ?>;
+                                                                                const MAPS_DATA = <?= json_encode($maps) ?>;
+                                                                        
+                                                                                function computeUserBias() {
+                                                                                    let wins1 = 0;
+                                                                                    let wins2 = 0;
+                                                                        
+                                                                                    const rows = document.querySelectorAll('#maps-tbody tr');
+                                                                        
+                                                                                    if (rows.length > 0) {
+                                                                                        rows.forEach((row) => {
+                                                                                            const inputT1 = row.querySelector('.score_t1');
+                                                                                            const inputT2 = row.querySelector('.score_t2');
+                                                                        
+                                                                                            let s1;
+                                                                                            let s2;
+                                                                        
+                                                                                            if (inputT1 && inputT2) {
+                                                                                                s1 = parseInt(inputT1.value);
+                                                                                                s2 = parseInt(inputT2.value);
+                                                                                            } else {
+                                                                                                s1 = parseInt(row.cells[1]?.textContent?.trim());
+                                                                                                s2 = parseInt(row.cells[3]?.textContent?.trim());
+                                                                                            }
+                                                                        
+                                                                                            if (!isNaN(s1) && !isNaN(s2)) {
+                                                                                                if (s1 > s2) {
+                                                                                                    wins1++;
+                                                                                                } else if (s2 > s1) {
+                                                                                                    wins2++;
+                                                                                                }
+                                                                                            }
+                                                                                        });
+                                                                                    } else {
+                                                                                        MAPS_DATA.forEach((m) => {
+                                                                                            const s1 = parseInt(m.score_t1);
+                                                                                            const s2 = parseInt(m.score_t2);
+                                                                                            if (!isNaN(s1) && !isNaN(s2)) {
+                                                                                                if (s1 > s2) {
+                                                                                                    wins1++;
+                                                                                                } else if (s2 > s1) {
+                                                                                                    wins2++;
+                                                                                                }
+                                                                                            }
+                                                                                        });
+                                                                                    }
+                                                                        
+                                                                                    const total = wins1 + wins2;
+                                                                                    return total > 0 ? wins1 / total : 0.5;
                                                                                 }
-                                                            
-                                                                                if (!isNaN(s1) && !isNaN(s2)) {
-                                                                                    if (s1 > s2) {
-                                                                                        wins1++;
-                                                                                    } else if (s2 > s1) {
-                                                                                        wins2++;
+                                                                        
+                                                                                async function loadProbabilities() {
+                                                                                    const section = document.getElementById('proba-section');
+                                                                                    if (!section) {
+                                                                                        return;
+                                                                                    }
+                                                                        
+                                                                                    try {
+                                                                                        const res = await fetch(`predict.php?team1_id=${TEAM1_ID}&team2_id=${TEAM2_ID}`);
+                                                                                        if (!res.ok) {
+                                                                                            throw new Error(`HTTP ${res.status}`);
+                                                                                        }
+                                                                                        const d = await res.json();
+                                                                                        if (d.error) {
+                                                                                            throw new Error(d.error);
+                                                                                        }
+                                                                        
+                                                                                        let userWeight = 0.3;
+                                                                                        if ("<?= $bo ?>" === 'BO1') {
+                                                                                            userWeight = 0.2;
+                                                                                        }
+                                                                                        if ("<?= $bo ?>" === 'BO5') {
+                                                                                            userWeight = 0.4;
+                                                                                        }
+                                                                        
+                                                                                        const eloProb1 = d.prob1 / 100;
+                                                                                        const userBias = computeUserBias();
+                                                                        
+                                                                                        let finalProb1 = (1 - userWeight) * eloProb1 + userWeight * userBias;
+                                                                                        finalProb1 = Math.max(0.05, Math.min(0.95, finalProb1));
+                                                                                        const finalProb2 = 1 - finalProb1;
+                                                                        
+                                                                                        const dots = (results, side) =>
+                                                                                            `<div class="form-row ${side}">${results.map((r) => `<span class="dot ${r}">${r}</span>`).join('')}</div>`;
+                                                                        
+                                                                                        const h2hVal1 = d.h2h.count > 0
+                                                                                            ? `${d.h2h.wins1}V - ${d.h2h.wins2}D <small style="opacity:.45">(${d.h2h.count} matchs)</small>`
+                                                                                            : '<span style="opacity:.35">Aucun face-a-face</span>';
+                                                                                        const h2hVal2 = d.h2h.count > 0
+                                                                                            ? `${d.h2h.wins2}V - ${d.h2h.wins1}D`
+                                                                                            : '<span style="opacity:.35">-</span>';
+                                                                        
+                                                                                        const reg1 = d.region?.team1 ? `<span class="region-tag">${d.region.team1}</span>` : '';
+                                                                                        const reg2 = d.region?.team2 ? `<span class="region-tag">${d.region.team2}</span>` : '';
+                                                                        
+                                                                                        const wLabels = [];
+                                                                                        if (d.weights.h2h > 0) {
+                                                                                            wLabels.push(`H2H ${Math.round(d.weights.h2h * 100)}%`);
+                                                                                        }
+                                                                                        wLabels.push(`Forme ${Math.round(d.weights.recent * 100)}%`);
+                                                                                        wLabels.push(`WR global ${Math.round(d.weights.global * 100)}%`);
+                                                                                        wLabels.push(`Gains ${Math.round(d.weights.earnings * 100)}%`);
+                                                                        
+                                                                                        section.innerHTML = `
+                                                                                            <div class="proba-header">
+                                                                                                <span style="font-size:1.1rem">📊</span>
+                                                                                                <span class="proba-header-title">Analyse & probabilités de victoire</span>
+                                                                                            </div>
+                                                                        
+                                                                                            <div class="proba-bar-wrap">
+                                                                                                <div class="proba-team-label t1">
+                                                                                                    ${TEAM1_NAME}${reg1}
+                                                                                                </div>
+                                                                                                <div class="proba-bar">
+                                                                                                    <div class="proba-fill1" style="width:${(finalProb1 * 100).toFixed(1)}%">
+                                                                                                        ${(finalProb1 * 100).toFixed(1)}%
+                                                                                                    </div>
+                                                                                                    <div class="proba-fill2">
+                                                                                                        ${(finalProb2 * 100).toFixed(1)}%
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="proba-team-label t2">
+                                                                                                    ${TEAM2_NAME}${reg2}
+                                                                                                </div>
+                                                                                            </div>
+                                                                        
+                                                                                            <hr class="proba-divider">
+                                                                        
+                                                                                            <div class="proba-grid">
+                                                                                                <div class="pg-val1">${h2hVal1}</div>
+                                                                                                <div class="pg-label">H2H</div>
+                                                                                                <div class="pg-val2">${h2hVal2}</div>
+                                                                        
+                                                                                                <div class="pg-val1">
+                                                                                                    <strong>${d.recent1.wr}%</strong>
+                                                                                                    <small style="opacity:.5"> / ${d.recent1.count} matchs</small>
+                                                                                                    ${dots(d.recent1.results, 'left')}
+                                                                                                </div>
+                                                                                                <div class="pg-label">Forme<br>récente</div>
+                                                                                                <div class="pg-val2">
+                                                                                                    <strong>${d.recent2.wr}%</strong>
+                                                                                                    <small style="opacity:.5"> / ${d.recent2.count} matchs</small>
+                                                                                                    ${dots(d.recent2.results, 'right')}
+                                                                                                </div>
+                                                                        
+                                                                                                <div class="pg-val1"><strong>${d.global_wr1}%</strong></div>
+                                                                                                <div class="pg-label">WR<br>global</div>
+                                                                                                <div class="pg-val2"><strong>${d.global_wr2}%</strong></div>
+                                                                        
+                                                                                                <div class="pg-val1">
+                                                                                                    <span class="earnings-badge">${d.earnings.team1}</span>
+                                                                                                </div>
+                                                                                                <div class="pg-label">Gains<br>tournois</div>
+                                                                                                <div class="pg-val2">
+                                                                                                    <span class="earnings-badge">${d.earnings.team2}</span>
+                                                                                                </div>
+                                                                                            </div>
+                                                                        
+                                                                                            <div class="proba-weights">
+                                                                                                ${wLabels.map((l) => `<span class="weight-pill">${l}</span>`).join('')}
+                                                                                            </div>
+                                                                                        `;
+                                                                                    } catch (err) {
+                                                                                        const s = document.getElementById('proba-section');
+                                                                                        if (s) {
+                                                                                            s.innerHTML = `<div class="proba-error">Impossible de calculer les probabilités (${err.message})</div>`;
+                                                                                        }
                                                                                     }
                                                                                 }
-                                                                            });
-                                                                        } else {
-                                                                            MAPS_DATA.forEach((m) => {
-                                                                                const s1 = parseInt(m.score_t1);
-                                                                                const s2 = parseInt(m.score_t2);
-                                                                                if (!isNaN(s1) && !isNaN(s2)) {
-                                                                                    if (s1 > s2) {
-                                                                                        wins1++;
-                                                                                    } else if (s2 > s1) {
-                                                                                        wins2++;
+                                                                        
+                                                                                if (TEAM1_ID && TEAM2_ID) {
+                                                                                    loadProbabilities();
+                                                                                }
+                                                                        
+                                                                                const boEl = document.getElementById('bo');
+                                                                                if (boEl) {
+                                                                                    const boMapsCount = {
+                                                                                        BO1: 1,
+                                                                                        BO3: 3,
+                                                                                        BO5: 5,
+                                                                                    };
+                                                                                    const allMapsOpts = <?= json_encode($allMaps) ?>;
+                                                                        
+                                                                                    boEl.addEventListener('change', function () {
+                                                                                        const nbMaps = boMapsCount[this.value] ?? 1;
+                                                                                        const tbody = document.getElementById('maps-tbody');
+                                                                                        const currentRows = tbody.querySelectorAll('tr').length;
+                                                                        
+                                                                                        for (let i = currentRows; i < nbMaps; i++) {
+                                                                                            const row = document.createElement('tr');
+                                                                                            row.innerHTML = `
+                                                                                                <td>
+                                                                                                    <select class="map">
+                                                                                                        ${allMapsOpts.map((m) => `<option value="${m}">${m}</option>`).join('')}
+                                                                                                    </select>
+                                                                                                </td>
+                                                                                                <td><input type="number" class="score_t1" min="0" max="30"></td>
+                                                                                                <td>-</td>
+                                                                                                <td><input type="number" class="score_t2" min="0" max="30"></td>
+                                                                                            `;
+                                                                                            tbody.appendChild(row);
+                                                                                        }
+                                                                                        for (let i = currentRows - 1; i >= nbMaps; i--) {
+                                                                                            tbody.removeChild(tbody.querySelectorAll('tr')[i]);
+                                                                                        }
+                                                                                    });
+                                                                                }
+                                                                        
+                                                                                function saveEdit() {
+                                                                                    const params = new URLSearchParams(window.location.search);
+                                                                                    params.set('team1_name', document.getElementById('team1_name').value);
+                                                                                    params.set('team2_name', document.getElementById('team2_name').value);
+                                                                                    params.set('bo', document.getElementById('bo').value);
+                                                                                    const heureInput = document.getElementById('heure');
+                                                                                    if (heureInput) {
+                                                                                        params.set('heure', heureInput.value);
+                                                                                    }
+                                                                        
+                                                                                    const maps = [];
+                                                                                    document.querySelectorAll('tbody tr').forEach((row) => {
+                                                                                        maps.push({
+                                                                                            map: row.querySelector('.map')?.value,
+                                                                                            score_t1: row.querySelector('.score_t1')?.value,
+                                                                                            score_t2: row.querySelector('.score_t2')?.value,
+                                                                                        });
+                                                                                    });
+                                                                                    params.set('maps', JSON.stringify(maps));
+                                                                                    params.delete('edit');
+                                                                                    window.location.href = `userPrediction.php?${params.toString()}`;
+                                                                                }
+                                                                        
+                                                                                async function confirmPrediction() {
+                                                                                    try {
+                                                                                        if (!TEAM1_ID || !TEAM2_ID) {
+                                                                                            alert("Équipes invalides pour l'enregistrement.");
+                                                                                            return;
+                                                                                        }
+                                                                        
+                                                                                        const maps = [];
+                                                                                        document.querySelectorAll('#maps-tbody tr').forEach((row) => {
+                                                                                            const mapInput = row.querySelector('.map');
+                                                                                            const scoreInput1 = row.querySelector('.score_t1');
+                                                                                            const scoreInput2 = row.querySelector('.score_t2');
+                                                                        
+                                                                                            let mapValue = '';
+                                                                                            let score1 = '';
+                                                                                            let score2 = '';
+                                                                        
+                                                                                            if (mapInput) {
+                                                                                                mapValue = mapInput.value || '';
+                                                                                            } else {
+                                                                                                const text = row.cells[0]?.textContent || '';
+                                                                                                const parts = text.split('-');
+                                                                                                mapValue = parts[1] ? parts[1].trim() : '';
+                                                                                            }
+                                                                        
+                                                                                            if (scoreInput1 && scoreInput2) {
+                                                                                                score1 = scoreInput1.value;
+                                                                                                score2 = scoreInput2.value;
+                                                                                            } else {
+                                                                                                score1 = (row.cells[1]?.textContent || '').trim();
+                                                                                                score2 = (row.cells[3]?.textContent || '').trim();
+                                                                                            }
+                                                                        
+                                                                                            maps.push({
+                                                                                                map: mapValue,
+                                                                                                score_t1: score1,
+                                                                                                score_t2: score2,
+                                                                                            });
+                                                                                        });
+                                                                        
+                                                                                        if (!maps.length) {
+                                                                                            alert("Impossible d'enregistrer une prédiction vide.");
+                                                                                            return;
+                                                                                        }
+                                                                        
+                                                                                        const formData = new FormData();
+                                                                                        formData.append('action', 'confirm_prediction');
+                                                                                        formData.append('team1_id', TEAM1_ID);
+                                                                                        formData.append('team2_id', TEAM2_ID);
+                                                                                        formData.append('maps', JSON.stringify(maps));
+                                                                        
+                                                                                        const response = await fetch(window.location.pathname, {
+                                                                                            method: 'POST',
+                                                                                            body: formData,
+                                                                                        });
+                                                                        
+                                                                                        const payload = await response.json();
+                                                                                        if (!response.ok || !payload.success) {
+                                                                                            throw new Error(payload.error || 'Erreur inconnue');
+                                                                                        }
+                                                                        
+                                                                                        window.location.href = 'Prediction.php?saved=1';
+                                                                                    } catch (error) {
+                                                                                        alert(error.message || "Erreur pendant l'enregistrement de la prédiction.");
                                                                                     }
                                                                                 }
-                                                                            });
-                                                                        }
-                                                            
-                                                                        const total = wins1 + wins2;
-                                                                        return total > 0 ? wins1 / total : 0.5;
-                                                                    }
-                                                            
-                                                                    async function loadProbabilities() {
-                                                                        const section = document.getElementById('proba-section');
-                                                                        if (!section) {
-                                                                            return;
-                                                                        }
-                                                            
-                                                                        try {
-                                                                            const res = await fetch(`predict.php?team1_id=${TEAM1_ID}&team2_id=${TEAM2_ID}`);
-                                                                            if (!res.ok) {
-                                                                                throw new Error(`HTTP ${res.status}`);
-                                                                            }
-                                                                            const d = await res.json();
-                                                                            if (d.error) {
-                                                                                throw new Error(d.error);
-                                                                            }
-                                                            
-                                                                            let userWeight = 0.3;
-                                                                            if ("<?= $bo ?>" === 'BO1') {
-                                                                                userWeight = 0.2;
-                                                                            }
-                                                                            if ("<?= $bo ?>" === 'BO5') {
-                                                                                userWeight = 0.4;
-                                                                            }
-                                                            
-                                                                            const eloProb1 = d.prob1 / 100;
-                                                                            const userBias = computeUserBias();
-                                                            
-                                                                            let finalProb1 = (1 - userWeight) * eloProb1 + userWeight * userBias;
-                                                                            finalProb1 = Math.max(0.05, Math.min(0.95, finalProb1));
-                                                                            const finalProb2 = 1 - finalProb1;
-                                                            
-                                                                            const dots = (results, side) =>
-                                                                                `<div class="form-row ${side}">${results.map((r) => `<span class="dot ${r}">${r}</span>`).join('')}</div>`;
-                                                            
-                                                                            const h2hVal1 = d.h2h.count > 0
-                                                                                ? `${d.h2h.wins1}V - ${d.h2h.wins2}D <small style="opacity:.45">(${d.h2h.count} matchs)</small>`
-                                                                                : '<span style="opacity:.35">Aucun face-a-face</span>';
-                                                                            const h2hVal2 = d.h2h.count > 0
-                                                                                ? `${d.h2h.wins2}V - ${d.h2h.wins1}D`
-                                                                                : '<span style="opacity:.35">-</span>';
-                                                            
-                                                                            const reg1 = d.region?.team1 ? `<span class="region-tag">${d.region.team1}</span>` : '';
-                                                                            const reg2 = d.region?.team2 ? `<span class="region-tag">${d.region.team2}</span>` : '';
-                                                            
-                                                                            const wLabels = [];
-                                                                            if (d.weights.h2h > 0) {
-                                                                                wLabels.push(`H2H ${Math.round(d.weights.h2h * 100)}%`);
-                                                                            }
-                                                                            wLabels.push(`Forme ${Math.round(d.weights.recent * 100)}%`);
-                                                                            wLabels.push(`WR global ${Math.round(d.weights.global * 100)}%`);
-                                                                            wLabels.push(`Gains ${Math.round(d.weights.earnings * 100)}%`);
-                                                            
-                                                                            section.innerHTML = `
-                                                                                <div class="proba-header">
-                                                                                    <span style="font-size:1.1rem">📊</span>
-                                                                                    <span class="proba-header-title">Analyse & probabilités de victoire</span>
-                                                                                </div>
-                                                            
-                                                                                <div class="proba-bar-wrap">
-                                                                                    <div class="proba-team-label t1">
-                                                                                        ${TEAM1_NAME}${reg1}
-                                                                                    </div>
-                                                                                    <div class="proba-bar">
-                                                                                        <div class="proba-fill1" style="width:${(finalProb1 * 100).toFixed(1)}%">
-                                                                                            ${(finalProb1 * 100).toFixed(1)}%
-                                                                                        </div>
-                                                                                        <div class="proba-fill2">
-                                                                                            ${(finalProb2 * 100).toFixed(1)}%
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div class="proba-team-label t2">
-                                                                                        ${TEAM2_NAME}${reg2}
-                                                                                    </div>
-                                                                                </div>
-                                                            
-                                                                                <hr class="proba-divider">
-                                                            
-                                                                                <div class="proba-grid">
-                                                                                    <div class="pg-val1">${h2hVal1}</div>
-                                                                                    <div class="pg-label">H2H</div>
-                                                                                    <div class="pg-val2">${h2hVal2}</div>
-                                                            
-                                                                                    <div class="pg-val1">
-                                                                                        <strong>${d.recent1.wr}%</strong>
-                                                                                        <small style="opacity:.5"> / ${d.recent1.count} matchs</small>
-                                                                                        ${dots(d.recent1.results, 'left')}
-                                                                                    </div>
-                                                                                    <div class="pg-label">Forme<br>récente</div>
-                                                                                    <div class="pg-val2">
-                                                                                        <strong>${d.recent2.wr}%</strong>
-                                                                                        <small style="opacity:.5"> / ${d.recent2.count} matchs</small>
-                                                                                        ${dots(d.recent2.results, 'right')}
-                                                                                    </div>
-                                                            
-                                                                                    <div class="pg-val1"><strong>${d.global_wr1}%</strong></div>
-                                                                                    <div class="pg-label">WR<br>global</div>
-                                                                                    <div class="pg-val2"><strong>${d.global_wr2}%</strong></div>
-                                                            
-                                                                                    <div class="pg-val1">
-                                                                                        <span class="earnings-badge">${d.earnings.team1}</span>
-                                                                                    </div>
-                                                                                    <div class="pg-label">Gains<br>tournois</div>
-                                                                                    <div class="pg-val2">
-                                                                                        <span class="earnings-badge">${d.earnings.team2}</span>
-                                                                                    </div>
-                                                                                </div>
-                                                            
-                                                                                <div class="proba-weights">
-                                                                                    ${wLabels.map((l) => `<span class="weight-pill">${l}</span>`).join('')}
-                                                                                </div>
-                                                                            `;
-                                                                        } catch (err) {
-                                                                            const s = document.getElementById('proba-section');
-                                                                            if (s) {
-                                                                                s.innerHTML = `<div class="proba-error">Impossible de calculer les probabilités (${err.message})</div>`;
-                                                                            }
-                                                                        }
-                                                                    }
-                                                            
-                                                                    if (TEAM1_ID && TEAM2_ID) {
-                                                                        loadProbabilities();
-                                                                    }
-                                                            
-                                                                    const boEl = document.getElementById('bo');
-                                                                    if (boEl) {
-                                                                        const boMapsCount = {
-                                                                            BO1: 1,
-                                                                            BO3: 3,
-                                                                            BO5: 5,
-                                                                        };
-                                                                        const allMapsOpts = <?= json_encode($allMaps) ?>;
-                                                            
-                                                                        boEl.addEventListener('change', function () {
-                                                                            const nbMaps = boMapsCount[this.value] ?? 1;
-                                                                            const tbody = document.getElementById('maps-tbody');
-                                                                            const currentRows = tbody.querySelectorAll('tr').length;
-                                                            
-                                                                            for (let i = currentRows; i < nbMaps; i++) {
-                                                                                const row = document.createElement('tr');
-                                                                                row.innerHTML = `
-                                                                                    <td>
-                                                                                        <select class="map">
-                                                                                            ${allMapsOpts.map((m) => `<option value="${m}">${m}</option>`).join('')}
-                                                                                        </select>
-                                                                                    </td>
-                                                                                    <td><input type="number" class="score_t1" min="0" max="30"></td>
-                                                                                    <td>-</td>
-                                                                                    <td><input type="number" class="score_t2" min="0" max="30"></td>
-                                                                                `;
-                                                                                tbody.appendChild(row);
-                                                                            }
-                                                                            for (let i = currentRows - 1; i >= nbMaps; i--) {
-                                                                                tbody.removeChild(tbody.querySelectorAll('tr')[i]);
-                                                                            }
-                                                                        });
-                                                                    }
-                                                            
-                                                                    function saveEdit() {
-                                                                        const params = new URLSearchParams(window.location.search);
-                                                                        params.set('team1_name', document.getElementById('team1_name').value);
-                                                                        params.set('team2_name', document.getElementById('team2_name').value);
-                                                                        params.set('bo', document.getElementById('bo').value);
-                                                                        const heureInput = document.getElementById('heure');
-                                                                        if (heureInput) {
-                                                                            params.set('heure', heureInput.value);
-                                                                        }
-                                                            
-                                                                        const maps = [];
-                                                                        document.querySelectorAll('tbody tr').forEach((row) => {
-                                                                            maps.push({
-                                                                                map: row.querySelector('.map')?.value,
-                                                                                score_t1: row.querySelector('.score_t1')?.value,
-                                                                                score_t2: row.querySelector('.score_t2')?.value,
-                                                                            });
-                                                                        });
-                                                                        params.set('maps', JSON.stringify(maps));
-                                                                        params.delete('edit');
-                                                                        window.location.href = `userPrediction.php?${params.toString()}`;
-                                                                    }
-                                                            
-                                                                    async function confirmPrediction() {
-                                                                        try {
-                                                                            if (!TEAM1_ID || !TEAM2_ID) {
-                                                                                alert("Équipes invalides pour l'enregistrement.");
-                                                                                return;
-                                                                            }
-                                                            
-                                                                            const maps = [];
-                                                                            document.querySelectorAll('#maps-tbody tr').forEach((row) => {
-                                                                                const mapInput = row.querySelector('.map');
-                                                                                const scoreInput1 = row.querySelector('.score_t1');
-                                                                                const scoreInput2 = row.querySelector('.score_t2');
-                                                            
-                                                                                let mapValue = '';
-                                                                                let score1 = '';
-                                                                                let score2 = '';
-                                                            
-                                                                                if (mapInput) {
-                                                                                    mapValue = mapInput.value || '';
-                                                                                } else {
-                                                                                    const text = row.cells[0]?.textContent || '';
-                                                                                    const parts = text.split('-');
-                                                                                    mapValue = parts[1] ? parts[1].trim() : '';
-                                                                                }
-                                                            
-                                                                                if (scoreInput1 && scoreInput2) {
-                                                                                    score1 = scoreInput1.value;
-                                                                                    score2 = scoreInput2.value;
-                                                                                } else {
-                                                                                    score1 = (row.cells[1]?.textContent || '').trim();
-                                                                                    score2 = (row.cells[3]?.textContent || '').trim();
-                                                                                }
-                                                            
-                                                                                maps.push({
-                                                                                    map: mapValue,
-                                                                                    score_t1: score1,
-                                                                                    score_t2: score2,
-                                                                                });
-                                                                            });
-                                                            
-                                                                            if (!maps.length) {
-                                                                                alert("Impossible d'enregistrer une prédiction vide.");
-                                                                                return;
-                                                                            }
-                                                            
-                                                                            const formData = new FormData();
-                                                                            formData.append('action', 'confirm_prediction');
-                                                                            formData.append('team1_id', TEAM1_ID);
-                                                                            formData.append('team2_id', TEAM2_ID);
-                                                                            formData.append('maps', JSON.stringify(maps));
-                                                            
-                                                                            const response = await fetch(window.location.pathname, {
-                                                                                method: 'POST',
-                                                                                body: formData,
-                                                                            });
-                                                            
-                                                                            const payload = await response.json();
-                                                                            if (!response.ok || !payload.success) {
-                                                                                throw new Error(payload.error || 'Erreur inconnue');
-                                                                            }
-                                                            
-                                                                            window.location.href = 'Prediction.php?saved=1';
-                                                                        } catch (error) {
-                                                                            alert(error.message || "Erreur pendant l'enregistrement de la prédiction.");
-                                                                        }
-                                                                    }
-                                                                </script>
-                                                            
-                                                            </body>
-                                                            
-                                                            </html>
+                                                                            </script>
+                                                                        
+                                                                        </body>
+                                                                        
+                                                                        </html>
 

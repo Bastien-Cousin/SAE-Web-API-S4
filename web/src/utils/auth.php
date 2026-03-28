@@ -1,6 +1,7 @@
 <?php
 
-function requireAuth() {
+function requireAuth()
+{
 
     if (!isset($_COOKIE['auth_token'])) {
         header("Location: /pages/PageConnexionInscription/Connexion.php");
@@ -31,6 +32,9 @@ function requireAuth() {
         header("Location: /pages/PageConnexionInscription/Connexion.php");
         exit();
     }
+
+    // Stocker les infos utilisateur en session
+    $_SESSION['user'] = $data["user"];
 
     return $data["user"];
 }
