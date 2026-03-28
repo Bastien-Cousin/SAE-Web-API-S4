@@ -136,7 +136,10 @@ describe('Teams Controller', () => {
                     matchesAsteam2: { take: 10 },
                 },
             })
-            expect(mockResponse.json).toHaveBeenCalledWith(mockTeam)
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                ...mockTeam,
+                pageid: '1',
+            })
         })
 
         it('should return 400 error if no id provided', async () => {
@@ -193,7 +196,12 @@ describe('Teams Controller', () => {
                 },
                 take: 20,
             })
-            expect(mockResponse.json).toHaveBeenCalledWith(mockTeams)
+            expect(mockResponse.json).toHaveBeenCalledWith([
+                {
+                    ...mockTeams[0],
+                    pageid: '1',
+                },
+            ])
         })
 
         it('should return 400 if no search query provided', async () => {
