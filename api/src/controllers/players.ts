@@ -111,19 +111,46 @@ export const searchPlayers = async (req: Request, res: Response) => {
 
 export const createPlayer = async (req: Request, res: Response) => {
     try {
-        const pseudo = typeof req.body?.pseudo === 'string' ? req.body.pseudo.trim() : ''
-        const realName = typeof req.body?.name === 'string' ? req.body.name.trim() : ''
-        const nationality = typeof req.body?.nationality === 'string' ? req.body.nationality.trim() : ''
-        const region = typeof req.body?.region === 'string' ? req.body.region.trim() : null
-        const status = typeof req.body?.status === 'string' ? req.body.status.trim() : 'actif'
-        const teamIdRaw = req.body?.teamId
-        const teamName = typeof req.body?.teamName === 'string' ? req.body.teamName.trim() : ''
-        const earningsRaw = req.body?.earnings
-        const ageRaw = req.body?.age
+        const getFirstDefined = (keys: string[]): unknown => {
+            for (const key of keys) {
+                const value = req.body?.[key]
+                if (value !== undefined) {
+                    return value
+                }
+            }
+            return undefined
+        }
+
+        const pseudoRaw = getFirstDefined(['pseudo'])
+        const realNameRaw = getFirstDefined(['name', 'nom_reel'])
+        const nationalityRaw = getFirstDefined(['nationality', 'nationalite'])
+        const regionRaw = getFirstDefined(['region'])
+        const statusRaw = getFirstDefined(['status', 'actif'])
+        const teamIdRaw = getFirstDefined(['teamId', 'team_id'])
+        const teamNameRaw = getFirstDefined(['teamName', 'equipe'])
+        const earningsRaw = getFirstDefined(['earnings', 'gains'])
+        const ageRaw = getFirstDefined(['age'])
+
+        const pseudo = typeof pseudoRaw === 'string' ? pseudoRaw.trim() : ''
+        const realName = typeof realNameRaw === 'string' ? realNameRaw.trim() : ''
+        const nationality = typeof nationalityRaw === 'string' ? nationalityRaw.trim() : ''
+        const region = typeof regionRaw === 'string' ? regionRaw.trim() : null
+        const status = typeof statusRaw === 'string' && statusRaw.trim() !== '' ? statusRaw.trim() : 'actif'
+        const teamName = typeof teamNameRaw === 'string' ? teamNameRaw.trim() : ''
 
         let roles: string[] = []
-        if (Array.isArray(req.body?.roles)) {
-            roles = req.body.roles
+        const rolesRaw = getFirstDefined(['roles'])
+        if (Array.isArray(rolesRaw)) {
+            roles = rolesRaw
+                .filter((role: unknown) => typeof role === 'string')
+                .map((role: string) => role.trim())
+                .filter((role: string) => role.length > 0)
+                .slice(0, 2)
+        } else {
+            const role1 = getFirstDefined(['role_1', 'role1'])
+            const role2 = getFirstDefined(['role_2', 'role2'])
+
+            roles = [role1, role2]
                 .filter((role: unknown) => typeof role === 'string')
                 .map((role: string) => role.trim())
                 .filter((role: string) => role.length > 0)
@@ -161,7 +188,11 @@ export const createPlayer = async (req: Request, res: Response) => {
         let resolvedTeamName: string | null = null
 
         if (teamIdRaw !== undefined && teamIdRaw !== null && `${teamIdRaw}`.trim() !== '') {
-            const parsedTeamId = BigInt(`${teamIdRaw}`)
+            if (!/^\d+$/.test(`${teamIdRaw}`.trim())) {
+                return res.status(400).json({ error: 'ID équipe invalide.' })
+            }
+
+            const parsedTeamId = BigInt(`${teamIdRaw}`.trim())
             const team = await prisma.team.findUnique({
                 where: { pageid: parsedTeamId },
                 select: { pageid: true, name: true },

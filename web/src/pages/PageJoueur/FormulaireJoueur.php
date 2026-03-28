@@ -86,7 +86,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($statusCode >= 400) {
-                $error = $response['error'] ?? "Erreur lors de la création du joueur.";
+                if (is_array($response) && isset($response['error']) && is_string($response['error'])) {
+                    $error = $response['error'];
+                } else {
+                    $error = "Erreur API (HTTP $statusCode) lors de la création du joueur.";
+                }
             } else {
                 header('Location: Joueur.php?created=1');
                 exit;
