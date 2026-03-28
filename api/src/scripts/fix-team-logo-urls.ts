@@ -13,6 +13,12 @@ dotenv.config({ path: path.join(__dirname, '..', '..', '.env') })
 
 const ASSETS_DIR = path.join(process.cwd(), 'public', 'assets', 'teams')
 
+// Typage des assets possibles pour chaque équipe
+type AssetTypes = 'logo' | 'logodark' | 'textlesslogo' | 'textlesslogodark'
+
+// teamAssets : teamId -> (assetType -> chemin)
+const teamAssets: Record<string, Partial<Record<AssetTypes, string>>> = {}
+
 /**
  * Mettre à jour les URLs des logos pour pointer vers les fichiers locaux
  */
@@ -30,9 +36,7 @@ async function fixTeamLogoUrls() {
         const files = fs.readdirSync(ASSETS_DIR)
         console.log(`📁 ${files.length} fichiers trouvés\n`)
 
-        // Parser les fichiers et construire une map: teamId -> {type: path}
-        const teamAssets: Record<string, Record<string, string>> = {}
-
+        // Parser les fichiers et construire la map teamAssets
         for (const file of files) {
             // Format: team_[pageid]_[type].[ext]
             const match = file.match(/^team_(\d+)_(\w+)\.\w+$/)
@@ -41,13 +45,16 @@ async function fixTeamLogoUrls() {
                 if (!teamAssets[teamId]) {
                     teamAssets[teamId] = {}
                 }
-                teamAssets[teamId][assetType] = `/assets/teams/${file}`
+                // TypeScript sait maintenant que assetType est une clé valide partielle
+                if (['logo', 'logodark', 'textlesslogo', 'textlesslogodark'].includes(assetType)) {
+                    teamAssets[teamId][assetType as AssetTypes] = `/assets/teams/${file}`
+                }
             }
         }
 
         console.log(`✅ ${Object.keys(teamAssets).length} équipes avec assets trouvées\n`)
 
-        // Mettre à jour chaque équipe
+        // Mettre à jour chaque équipe dans la DB
         let updatedCount = 0
         let skippedCount = 0
 
@@ -63,7 +70,7 @@ async function fixTeamLogoUrls() {
                 }
 
                 // Construire les données de mise à jour
-                const updateData: any = {}
+                const updateData: Partial<Record<string, string>> = {}
 
                 if (assets.logo) {
                     updateData.logourl = `http://localhost:3070/assets/teams/${assets.logo.split('/').pop()}`
@@ -78,7 +85,7 @@ async function fixTeamLogoUrls() {
                     updateData.textlesslogodarkurl = `http://localhost:3070/assets/teams/${assets.textlesslogodark.split('/').pop()}`
                 }
 
-                // Mettre à jour
+                // Mettre à jour si au moins un champ
                 if (Object.keys(updateData).length > 0) {
                     await prisma.team.update({
                         where: { pageid: BigInt(teamId) },
@@ -106,6 +113,7 @@ async function fixTeamLogoUrls() {
     }
 }
 
+// Lancer le script
 fixTeamLogoUrls()
     .then(async () => {
         await prisma.$disconnect()

@@ -13,6 +13,12 @@ dotenv.config({ path: path.join(__dirname, '..', '..', '.env') })
 
 const ASSETS_DIR = path.join(process.cwd(), 'public', 'assets', 'tournaments')
 
+// Typage des assets possibles pour chaque tournoi
+type AssetTypes = 'banner' | 'icon'
+
+// tournamentAssets : tournamentId -> (assetType -> chemin)
+const tournamentAssets: Record<string, Partial<Record<AssetTypes, string>>> = {}
+
 /**
  * Mettre à jour les URLs des bannières pour pointer vers les fichiers locaux
  */
@@ -30,9 +36,7 @@ async function fixTournamentBannerUrls() {
         const files = fs.readdirSync(ASSETS_DIR)
         console.log(`📁 ${files.length} fichiers trouvés\n`)
 
-        // Parser les fichiers et construire une map: tournamentId -> {type: path}
-        const tournamentAssets: Record<string, Record<string, string>> = {}
-
+        // Parser les fichiers et construire la map tournamentAssets
         for (const file of files) {
             // Format: tournament_[pageid]_[type].[ext]
             const match = file.match(/^tournament_(\d+)_(\w+)\.\w+$/)
@@ -41,13 +45,15 @@ async function fixTournamentBannerUrls() {
                 if (!tournamentAssets[tournamentId]) {
                     tournamentAssets[tournamentId] = {}
                 }
-                tournamentAssets[tournamentId][assetType] = `/assets/tournaments/${file}`
+                if (['banner', 'icon'].includes(assetType)) {
+                    tournamentAssets[tournamentId][assetType as AssetTypes] = `/assets/tournaments/${file}`
+                }
             }
         }
 
         console.log(`✅ ${Object.keys(tournamentAssets).length} tournois avec assets trouvés\n`)
 
-        // Mettre à jour chaque tournoi
+        // Mettre à jour chaque tournoi dans la DB
         let updatedCount = 0
         let skippedCount = 0
 
@@ -63,7 +69,7 @@ async function fixTournamentBannerUrls() {
                 }
 
                 // Construire les données de mise à jour
-                const updateData: any = {}
+                const updateData: Partial<Record<string, string>> = {}
 
                 if (assets.banner) {
                     updateData.bannerurl = `http://localhost:3070/assets/tournaments/${assets.banner.split('/').pop()}`
@@ -72,7 +78,7 @@ async function fixTournamentBannerUrls() {
                     updateData.iconurl = `http://localhost:3070/assets/tournaments/${assets.icon.split('/').pop()}`
                 }
 
-                // Mettre à jour
+                // Mettre à jour si au moins un champ
                 if (Object.keys(updateData).length > 0) {
                     await prisma.tournament.update({
                         where: { pageid: BigInt(tournamentId) },
@@ -100,6 +106,7 @@ async function fixTournamentBannerUrls() {
     }
 }
 
+// Lancer le script
 fixTournamentBannerUrls()
     .then(async () => {
         await prisma.$disconnect()
