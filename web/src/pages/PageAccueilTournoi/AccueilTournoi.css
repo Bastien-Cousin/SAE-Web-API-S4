@@ -28,6 +28,41 @@ body {
     border-radius: 2px;
 }
 
+.tournament-filters {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.tournament-filters label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.tournament-filters select {
+    padding: 10px 15px;
+    border: 2px solid #ff6b00;
+    border-radius: 8px;
+    font-size: 16px;
+    background-color: white;
+    color: #333;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.tournament-filters select:hover {
+    border-color: #ff3c00;
+    box-shadow: 0 2px 8px rgba(255, 107, 0, 0.2);
+}
+
+.tournament-filters select:focus {
+    outline: none;
+    border-color: #ff3c00;
+    box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1);
+}
+
 .cards {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
