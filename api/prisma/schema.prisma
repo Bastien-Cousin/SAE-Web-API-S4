@@ -223,7 +223,7 @@ model User {
     updatedAt DateTime @updatedAt
 
     // Relations
-    predictions prediction[]
+    predictions prediction[] @relation("UserPredictions")
 
     @@map("user")
 }
@@ -241,7 +241,7 @@ model prediction {
     confidence Int?
 
     // Relations
-    user             User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+    user             User              @relation("UserPredictions", fields: [user_id], references: [id], onDelete: Cascade)
     match            match             @relation(fields: [match_id], references: [pageid], onDelete: Cascade)
     prediction_games prediction_game[]
 
