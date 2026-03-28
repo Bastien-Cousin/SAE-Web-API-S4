@@ -1,19 +1,18 @@
 <?php
 header('Content-Type: application/json');
 
-// ─── Connexion BDD ───────────────────────────────────────────────────────────
-$host     = getenv('POSTGRES_HOST')     ?: 'db';
-$port     = getenv('POSTGRES_PORT')     ?: '5432';
-$dbname   = getenv('POSTGRES_DB')       ?: 'sae_db';
-$user     = getenv('POSTGRES_USER')     ?: 'sae_user';
+$host = getenv('POSTGRES_HOST') ?: 'db';
+$port = getenv('POSTGRES_PORT') ?: '5432';
+$dbname = getenv('POSTGRES_DB') ?: 'sae_db';
+$user = getenv('POSTGRES_USER') ?: 'sae_user';
 $password = getenv('POSTGRES_PASSWORD') ?: 'sae_password';
 
-$team1_id = intval($_GET['team1_id'] ?? 0);
-$team2_id = intval($_GET['team2_id'] ?? 0);
+$team1_id = (int) ($_GET['team1_id'] ?? 0);
+$team2_id = (int) ($_GET['team2_id'] ?? 0);
 
 if (!$team1_id || !$team2_id) {
     http_response_code(400);
-    echo json_encode(['error' => 'IDs d\'équipes manquants']);
+    echo json_encode(['error' => 'IDs d\'equipes manquants']);
     exit;
 }
 
@@ -26,252 +25,383 @@ try {
     exit;
 }
 
-// ─── Poids par tier de tournoi ───────────────────────────────────────────────
 function tierWeight(?string $tier): float
 {
-    $t = strtolower(trim($tier ?? ''));
-    if (str_contains($t, 'premier') || $t === 's-tier') return 3.0;
-    if ($t === 'a-tier')                                  return 2.0;
-    if ($t === 'b-tier')                                  return 1.5;
+    $normalizedTier = strtolower(trim($tier ?? ''));
+
+    if (str_contains($normalizedTier, 'premier') || $normalizedTier === 's-tier') {
+        return 3.0;
+    }
+    if ($normalizedTier === 'a-tier') {
+        return 2.0;
+    }
+    if ($normalizedTier === 'b-tier') {
+        return 1.5;
+    }
+
     return 1.0;
 }
 
-function getElo(PDO $pdo, int $teamId): float
+function normalizeTeamName(?string $name): string
 {
-    $stmt = $pdo->prepare("
-        SELECT
-            COUNT(*) AS total,
-            SUM(CASE
-                WHEN (team1_id = :tid AND winner = '1')
-                  OR (team2_id = :tid AND winner = '2')
-                THEN 1 ELSE 0 END) AS wins
-        FROM match
-        WHERE finished = true
-          AND (team1_id = :tid OR team2_id = :tid)
-    ");
-    $stmt->execute([':tid' => $teamId]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $normalized = strtolower(trim((string) $name));
+    $normalized = preg_replace('/^team\s+/i', '', $normalized);
+    $normalized = preg_replace('/[^a-z0-9]+/', ' ', $normalized);
+    $normalized = preg_replace('/\s+/', ' ', (string) $normalized);
 
-    if ($row['total'] == 0) return 1500;
-
-    $wr = $row['wins'] / $row['total'];
-    return 1500 + ($wr - 0.5) * 800;
+    return trim((string) $normalized);
 }
 
-function eloProbability(float $elo1, float $elo2): float
+function sameTeamName(?string $left, ?string $right): bool
 {
-    return 1 / (1 + pow(10, ($elo2 - $elo1) / 400));
+    $normalizedLeft = normalizeTeamName($left);
+    $normalizedRight = normalizeTeamName($right);
+
+    if ($normalizedLeft === '' || $normalizedRight === '') {
+        return false;
+    }
+
+    if ($normalizedLeft === $normalizedRight) {
+        return true;
+    }
+
+    return str_contains($normalizedLeft, $normalizedRight) || str_contains($normalizedRight, $normalizedLeft);
 }
 
-// ─── 0. Infos équipes (earnings, region) ────────────────────────────────────
-$teamStmt = $pdo->prepare("
-    SELECT pageid, name, earnings, region
-    FROM team
-    WHERE pageid IN (:t1, :t2)
-");
-$teamStmt->execute([':t1' => $team1_id, ':t2' => $team2_id]);
+function decodeJsonArray($value): array
+{
+    if (is_array($value)) {
+        return $value;
+    }
+
+    $decoded = json_decode((string) $value, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function extractParticipantNames(array $match): array
+{
+    $participants = [];
+
+    if (!empty($match['team1_name'])) {
+        $participants[] = $match['team1_name'];
+    }
+    if (!empty($match['team2_name'])) {
+        $participants[] = $match['team2_name'];
+    }
+
+    if (count($participants) >= 2) {
+        return [$participants[0], $participants[1]];
+    }
+
+    $opponents = decodeJsonArray($match['match2opponents'] ?? '[]');
+    $names = [];
+    foreach ($opponents as $opponent) {
+        $name = $opponent['name'] ?? null;
+        if ($name) {
+            $names[] = $name;
+        }
+    }
+
+    return [
+        $participants[0] ?? ($names[0] ?? null),
+        $participants[1] ?? ($names[1] ?? null),
+    ];
+}
+
+function matchHasTeam(array $match, int $teamId, string $teamName): bool
+{
+    if ((string) ($match['team1_id'] ?? '') === (string) $teamId || (string) ($match['team2_id'] ?? '') === (string) $teamId) {
+        return true;
+    }
+
+    [$participant1, $participant2] = extractParticipantNames($match);
+    return sameTeamName($participant1, $teamName) || sameTeamName($participant2, $teamName);
+}
+
+function getTeamSide(array $match, int $teamId, string $teamName): ?int
+{
+    if ((string) ($match['team1_id'] ?? '') === (string) $teamId) {
+        return 1;
+    }
+    if ((string) ($match['team2_id'] ?? '') === (string) $teamId) {
+        return 2;
+    }
+
+    [$participant1, $participant2] = extractParticipantNames($match);
+    if (sameTeamName($participant1, $teamName)) {
+        return 1;
+    }
+    if (sameTeamName($participant2, $teamName)) {
+        return 2;
+    }
+
+    return null;
+}
+
+function didTeamWin(array $match, int $teamId, string $teamName): ?bool
+{
+    $side = getTeamSide($match, $teamId, $teamName);
+    $winner = (string) ($match['winner'] ?? '');
+
+    if ($side === null || ($winner !== '1' && $winner !== '2')) {
+        return null;
+    }
+
+    return (string) $side === $winner;
+}
+
+function formatEarnings(int $earnings): string
+{
+    if ($earnings >= 1000000) {
+        return round($earnings / 1000000, 2) . 'M$';
+    }
+    if ($earnings >= 1000) {
+        return round($earnings / 1000, 1) . 'k$';
+    }
+
+    return $earnings > 0 ? $earnings . '$' : 'N/A';
+}
+
+function buildRecentForm(array $matches, int $teamId, string $teamName): array
+{
+    $recentMatches = array_slice($matches, 0, 10);
+    $weightedWins = 0.0;
+    $weightedTotal = 0.0;
+    $results = [];
+
+    foreach ($recentMatches as $match) {
+        $didWin = didTeamWin($match, $teamId, $teamName);
+        if ($didWin === null) {
+            continue;
+        }
+
+        $weight = tierWeight($match['liquipediatier'] ?? null);
+        $weightedTotal += $weight;
+        if ($didWin) {
+            $weightedWins += $weight;
+        }
+        $results[] = $didWin ? 'W' : 'L';
+    }
+
+    return [
+        'score' => $weightedTotal > 0 ? $weightedWins / $weightedTotal : 0.5,
+        'results' => $results,
+        'count' => count($results),
+    ];
+}
+
+function buildGlobalWr(array $matches, int $teamId, string $teamName): float
+{
+    $total = 0;
+    $wins = 0;
+
+    foreach ($matches as $match) {
+        $didWin = didTeamWin($match, $teamId, $teamName);
+        if ($didWin === null) {
+            continue;
+        }
+
+        $total++;
+        if ($didWin) {
+            $wins++;
+        }
+    }
+
+    return $total > 0 ? $wins / $total : 0.5;
+}
+
+function buildElo(float $winRate, int $matchCount): float
+{
+    if ($matchCount === 0) {
+        return 1500.0;
+    }
+
+    return 1500 + ($winRate - 0.5) * 800;
+}
+
+$teamStmt = $pdo->prepare(
+    'SELECT pageid, name, earnings, region
+     FROM team
+     WHERE pageid = :team1_id OR pageid = :team2_id'
+);
+$teamStmt->execute([
+    ':team1_id' => $team1_id,
+    ':team2_id' => $team2_id,
+]);
 $teamRows = $teamStmt->fetchAll(PDO::FETCH_ASSOC);
 
 $teamInfo = [];
 foreach ($teamRows as $row) {
-    $teamInfo[$row['pageid']] = $row;
+    $teamInfo[(string) $row['pageid']] = $row;
 }
 
-$earnings1 = (int)($teamInfo[$team1_id]['earnings'] ?? 0);
-$earnings2 = (int)($teamInfo[$team2_id]['earnings'] ?? 0);
-$region1   = $teamInfo[$team1_id]['region'] ?? null;
-$region2   = $teamInfo[$team2_id]['region'] ?? null;
+$team1Name = (string) ($teamInfo[(string) $team1_id]['name'] ?? '');
+$team2Name = (string) ($teamInfo[(string) $team2_id]['name'] ?? '');
+$team1ShortName = normalizeTeamName($team1Name);
+$team2ShortName = normalizeTeamName($team2Name);
 
-$totalEarnings  = $earnings1 + $earnings2;
+$matchStmt = $pdo->prepare(
+    "SELECT
+        m.pageid,
+        m.team1_id,
+        m.team2_id,
+        m.winner,
+        m.finished,
+        m.status,
+        m.date,
+        m.liquipediatier,
+        m.match2opponents,
+        t1.name AS team1_name,
+        t2.name AS team2_name
+     FROM match m
+     LEFT JOIN team t1 ON t1.pageid = m.team1_id
+     LEFT JOIN team t2 ON t2.pageid = m.team2_id
+     WHERE COALESCE(m.status, '') <> 'prediction_only'
+       AND COALESCE(m.finished, false) = true
+       AND (
+            m.team1_id = :team1_id
+         OR m.team2_id = :team1_id
+         OR m.team1_id = :team2_id
+         OR m.team2_id = :team2_id
+         OR LOWER(COALESCE(m.match2opponents::text, '')) LIKE :team1_name_like
+         OR LOWER(COALESCE(m.match2opponents::text, '')) LIKE :team1_short_like
+         OR LOWER(COALESCE(m.match2opponents::text, '')) LIKE :team2_name_like
+         OR LOWER(COALESCE(m.match2opponents::text, '')) LIKE :team2_short_like
+       )
+     ORDER BY m.date DESC NULLS LAST"
+);
+$matchStmt->execute([
+    ':team1_id' => $team1_id,
+    ':team2_id' => $team2_id,
+    ':team1_name_like' => '%' . strtolower($team1Name) . '%',
+    ':team1_short_like' => '%' . $team1ShortName . '%',
+    ':team2_name_like' => '%' . strtolower($team2Name) . '%',
+    ':team2_short_like' => '%' . $team2ShortName . '%',
+]);
+$allCandidateMatches = $matchStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$team1Matches = [];
+$team2Matches = [];
+$h2hMatches = [];
+
+foreach ($allCandidateMatches as $match) {
+    $hasTeam1 = matchHasTeam($match, $team1_id, $team1Name);
+    $hasTeam2 = matchHasTeam($match, $team2_id, $team2Name);
+
+    if ($hasTeam1) {
+        $team1Matches[] = $match;
+    }
+    if ($hasTeam2) {
+        $team2Matches[] = $match;
+    }
+    if ($hasTeam1 && $hasTeam2) {
+        $h2hMatches[] = $match;
+    }
+}
+
+$earnings1 = (int) ($teamInfo[(string) $team1_id]['earnings'] ?? 0);
+$earnings2 = (int) ($teamInfo[(string) $team2_id]['earnings'] ?? 0);
+$region1 = $teamInfo[(string) $team1_id]['region'] ?? null;
+$region2 = $teamInfo[(string) $team2_id]['region'] ?? null;
+$totalEarnings = $earnings1 + $earnings2;
 $earningsScore1 = $totalEarnings > 0 ? $earnings1 / $totalEarnings : 0.5;
 
-function formatEarnings(int $e): string
-{
-    if ($e >= 1_000_000) return round($e / 1_000_000, 2) . 'M$';
-    if ($e >= 1_000)     return round($e / 1_000, 1)     . 'k$';
-    return $e > 0 ? $e . '$' : 'N/A';
-}
-
-// ─── 1. Historique H2H ───────────────────────────────────────────────────────
-$h2hStmt = $pdo->prepare("
-    SELECT
-        winner,
-        liquipediatier,
-        CASE WHEN team1_id = :t1 THEN '1' ELSE '2' END AS perspective,
-        date
-    FROM match
-    WHERE finished = true
-      AND (
-          (team1_id = :t1 AND team2_id = :t2)
-       OR (team1_id = :t2 AND team2_id = :t1)
-      )
-    ORDER BY date DESC
-");
-$h2hStmt->execute([':t1' => $team1_id, ':t2' => $team2_id]);
-$h2hMatches = $h2hStmt->fetchAll(PDO::FETCH_ASSOC);
-
-$h2hWW1      = 0.0;
-$h2hWT       = 0.0;
+$h2hWeightedWins1 = 0.0;
+$h2hWeightedTotal = 0.0;
 $h2hWins1Raw = 0;
 $h2hWins2Raw = 0;
 
-foreach ($h2hMatches as $m) {
-    $w       = tierWeight($m['liquipediatier']);
-    $h2hWT  += $w;
-    $team1Won = ($m['perspective'] === '1' && $m['winner'] === '1')
-        || ($m['perspective'] === '2' && $m['winner'] === '2');
-    if ($team1Won) {
-        $h2hWW1 += $w;
+foreach ($h2hMatches as $match) {
+    $didTeam1Win = didTeamWin($match, $team1_id, $team1Name);
+    if ($didTeam1Win === null) {
+        continue;
+    }
+
+    $weight = tierWeight($match['liquipediatier'] ?? null);
+    $h2hWeightedTotal += $weight;
+    if ($didTeam1Win) {
+        $h2hWeightedWins1 += $weight;
         $h2hWins1Raw++;
     } else {
         $h2hWins2Raw++;
     }
 }
 
-$h2hCount  = count($h2hMatches);
-$h2hScore1 = $h2hWT > 0 ? $h2hWW1 / $h2hWT : 0.5;
+$h2hCount = $h2hWins1Raw + $h2hWins2Raw;
+$h2hScore1 = $h2hWeightedTotal > 0 ? $h2hWeightedWins1 / $h2hWeightedTotal : 0.5;
 
-// ─── 2. Forme récente (10 derniers matchs, pondérés par tier) ────────────────
-function getRecentForm(PDO $pdo, int $teamId): array
-{
-    $stmt = $pdo->prepare("
-        SELECT
-            CASE WHEN team1_id = :tid THEN '1' ELSE '2' END AS side,
-            winner,
-            liquipediatier,
-            date
-        FROM match
-        WHERE finished = true
-          AND (team1_id = :tid OR team2_id = :tid)
-        ORDER BY date DESC
-        LIMIT 10
-    ");
-    $stmt->execute([':tid' => $teamId]);
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$recent1 = buildRecentForm($team1Matches, $team1_id, $team1Name);
+$recent2 = buildRecentForm($team2Matches, $team2_id, $team2Name);
+$globalWR1 = buildGlobalWr($team1Matches, $team1_id, $team1Name);
+$globalWR2 = buildGlobalWr($team2Matches, $team2_id, $team2Name);
 
-    $wWins  = 0.0;
-    $wTotal = 0.0;
-    $results = [];
-    foreach ($rows as $r) {
-        $w       = tierWeight($r['liquipediatier']);
-        $wTotal += $w;
-        $won     = ($r['side'] === $r['winner']);
-        if ($won) $wWins += $w;
-        $results[] = $won ? 'W' : 'L';
-    }
-    return [
-        'score'   => $wTotal > 0 ? $wWins / $wTotal : 0.5,
-        'results' => $results,
-        'count'   => count($rows),
-    ];
-}
-
-$recent1 = getRecentForm($pdo, $team1_id);
-$recent2 = getRecentForm($pdo, $team2_id);
-
-// ─── 3. Win Rate global ──────────────────────────────────────────────────────
-function getGlobalWR(PDO $pdo, int $teamId): float
-{
-    $stmt = $pdo->prepare("
-        SELECT
-            COUNT(*) AS total,
-            SUM(CASE
-                WHEN (team1_id = :tid AND winner = '1')
-                  OR (team2_id = :tid AND winner = '2') THEN 1 ELSE 0
-            END) AS wins
-        FROM match
-        WHERE finished = true
-          AND (team1_id = :tid OR team2_id = :tid)
-    ");
-    $stmt->execute([':tid' => $teamId]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    return (int)$row['total'] > 0 ? (float)$row['wins'] / (float)$row['total'] : 0.5;
-}
-
-$globalWR1 = getGlobalWR($pdo, $team1_id);
-$globalWR2 = getGlobalWR($pdo, $team2_id);
-
-// ─── Scores relatifs (ramenés à la perspective "team1 gagne") ────────────────
 $recentRelative1 = ($recent1['score'] + (1 - $recent2['score'])) / 2;
-$globalRelative1 = ($globalWR1        + (1 - $globalWR2))        / 2;
+$globalRelative1 = ($globalWR1 + (1 - $globalWR2)) / 2;
 
-// ─── Pondération dynamique selon la quantité de H2H disponible ───────────────
 if ($h2hCount >= 5) {
-    $wH2H      = 0.40;
-    $wRecent   = 0.30;
-    $wGlobal   = 0.20;
+    $wH2H = 0.40;
+    $wRecent = 0.30;
+    $wGlobal = 0.20;
     $wEarnings = 0.10;
 } elseif ($h2hCount >= 2) {
-    $wH2H      = 0.20;
-    $wRecent   = 0.40;
-    $wGlobal   = 0.25;
+    $wH2H = 0.20;
+    $wRecent = 0.40;
+    $wGlobal = 0.25;
     $wEarnings = 0.15;
 } else {
-    $wH2H      = 0.00;
-    $wRecent   = 0.50;
-    $wGlobal   = 0.30;
+    $wH2H = 0.00;
+    $wRecent = 0.50;
+    $wGlobal = 0.30;
     $wEarnings = 0.20;
-    $h2hScore1 = 0.5; // neutre
+    $h2hScore1 = 0.5;
 }
 
-// ─── Calcul final — fusion pondérée de tous les signaux ──────────────────────
-// CORRECTION : on utilise réellement les poids calculés ci-dessus
-// (avant : seul eloProbability() était utilisé, les poids étaient ignorés)
-$elo1 = getElo($pdo, $team1_id);
-$elo2 = getElo($pdo, $team2_id);
+$elo1 = buildElo($globalWR1, count($team1Matches));
+$elo2 = buildElo($globalWR2, count($team2Matches));
 
-$prob1 = $wH2H      * $h2hScore1
-    + $wRecent   * $recentRelative1
-    + $wGlobal   * $globalRelative1
+$prob1 = $wH2H * $h2hScore1
+    + $wRecent * $recentRelative1
+    + $wGlobal * $globalRelative1
     + $wEarnings * $earningsScore1;
-
 $prob1 = max(0.05, min(0.95, $prob1));
 $prob2 = 1 - $prob1;
 
-// ─── Réponse JSON ─────────────────────────────────────────────────────────────
 echo json_encode([
     'prob1' => round($prob1 * 100, 1),
     'prob2' => round($prob2 * 100, 1),
-
     'h2h' => [
-        'count'  => $h2hCount,
-        'wins1'  => $h2hWins1Raw,
-        'wins2'  => $h2hWins2Raw,
+        'count' => $h2hCount,
+        'wins1' => $h2hWins1Raw,
+        'wins2' => $h2hWins2Raw,
         'weight' => $wH2H,
     ],
-
     'recent1' => [
-        'wr'      => round($recent1['score'] * 100, 1),
-        'count'   => $recent1['count'],
+        'wr' => round($recent1['score'] * 100, 1),
+        'count' => $recent1['count'],
         'results' => $recent1['results'],
     ],
     'recent2' => [
-        'wr'      => round($recent2['score'] * 100, 1),
-        'count'   => $recent2['count'],
+        'wr' => round($recent2['score'] * 100, 1),
+        'count' => $recent2['count'],
         'results' => $recent2['results'],
     ],
-
     'global_wr1' => round($globalWR1 * 100, 1),
     'global_wr2' => round($globalWR2 * 100, 1),
-
     'earnings' => [
-        'team1'  => formatEarnings($earnings1),
-        'team2'  => formatEarnings($earnings2),
+        'team1' => formatEarnings($earnings1),
+        'team2' => formatEarnings($earnings2),
         'weight' => $wEarnings,
     ],
-
     'region' => [
         'team1' => $region1,
         'team2' => $region2,
     ],
-
     'weights' => [
-        'h2h'      => $wH2H,
-        'recent'   => $wRecent,
-        'global'   => $wGlobal,
+        'h2h' => $wH2H,
+        'recent' => $wRecent,
+        'global' => $wGlobal,
         'earnings' => $wEarnings,
     ],
-
     'elo' => [
         'team1' => round($elo1),
         'team2' => round($elo2),
