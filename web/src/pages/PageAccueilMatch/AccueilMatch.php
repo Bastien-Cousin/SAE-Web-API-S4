@@ -112,6 +112,7 @@
         LEFT JOIN team t1 ON m.team1_id = t1.pageid
         LEFT JOIN team t2 ON m.team2_id = t2.pageid
         WHERE 1=1
+        AND COALESCE(m.status, '') <> 'prediction_only'
     ";
 
     $params = [];

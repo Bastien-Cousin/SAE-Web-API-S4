@@ -295,7 +295,10 @@ async function linkTeamsToMatches(client: PoolClient): Promise<void> {
 
         for (const row of matchesWithoutTeams.rows) {
             try {
-                const opponents = JSON.parse(row.match2opponents);
+                // match2opponents peut être un objet parsé ou une chaîne JSON
+                const opponents = typeof row.match2opponents === 'string' 
+                    ? JSON.parse(row.match2opponents) 
+                    : row.match2opponents;
                 
                 if (!Array.isArray(opponents) || opponents.length < 2) {
                     console.log(`   ⏭️  Match ${row.pageid}: format invalide`);
@@ -363,7 +366,7 @@ async function updateMatches(): Promise<void> {
     const MAX_MATCHES: number = 5000;
     const params: PaginationParams = {
         wiki: 'counterstrike',
-        conditions: '[[liquipediatier::1]] AND [[date::>2025-01-01]]',
+        conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2025-01-01]]',
         limit: 100,
         offset: 0
     };

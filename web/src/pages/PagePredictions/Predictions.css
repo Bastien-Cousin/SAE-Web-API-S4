@@ -1,4 +1,5 @@
 body {
+    margin: 0;
     background-color: #f7f5f2;
     font-family: 'Inter', sans-serif;
     color: #333;
@@ -10,9 +11,7 @@ body {
     width: 100%;
     background-color: #faf8f5;
     border-bottom: 1px solid #e0dcd7;
-    position: sticky;
-    top: 0;
-    z-index: 20;
+    position: relative;
 }
 
 nav a {
@@ -193,6 +192,18 @@ button:hover {
     border: 1px solid #e7e3dd;
     margin-bottom: 12px;
     box-shadow: 0 3px 8px rgba(0,0,0,0.04);
+}
+
+.pred-card.correct {
+    border-left: 5px solid #3f9a45;
+}
+
+.pred-card.wrong {
+    border-left: 5px solid #c84d3e;
+}
+
+.pred-card.pending {
+    border-left: 5px solid #d0a431;
 }
 
 .pred-label,

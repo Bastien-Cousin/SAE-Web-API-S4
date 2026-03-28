@@ -7,11 +7,10 @@
     padding: 10px 20px;
     margin-bottom: 10px;
     border-radius: 8px;
-    border: 2px solid #1e3a8a;;
-    width: 60%;
-    max-width: 800px;
+    border: 2px solid #1e3a8a;
+    width: 100%;
     margin: 10px auto;
-    transition: 
+    transition:
         transform 0.25s ease,
         border-color 0.25s ease,
         box-shadow 0.25s ease;
@@ -64,5 +63,7 @@
 .match-link {
     text-decoration: none;
     display: block;
-    width: 100%;
+    width: 60%;
+    max-width: 800px;
+    margin: 0 auto;
 }

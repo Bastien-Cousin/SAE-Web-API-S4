@@ -18,3 +18,8 @@ footer p {
     color: var(--clr-white);
     letter-spacing: 0.5px;
 }
+
+a {
+    text-decoration: none;
+    color: orange;
+}
