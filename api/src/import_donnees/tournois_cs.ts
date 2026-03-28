@@ -1,6 +1,7 @@
 import { Pool, type PoolClient } from 'pg'
 import axios, { AxiosError } from 'axios'
 import settings from './settings.js'
+import { fileURLToPath } from 'url'
 
 // Interface pour les données de tournoi
 interface tournament {
@@ -306,7 +307,9 @@ process.on('SIGTERM', async () => {
 })
 
 // CLI execution
-main().catch((error: any) => {
-    console.error(`❌ Erreur non gérée : ${error.message}`)
-    process.exit(1)
-})
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch((error: any) => {
+        console.error(`❌ Erreur non gérée : ${error.message}`)
+        process.exit(1)
+    })
+}

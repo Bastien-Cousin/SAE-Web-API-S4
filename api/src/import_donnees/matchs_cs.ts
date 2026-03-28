@@ -1,6 +1,7 @@
 import { Pool, type PoolClient } from 'pg';
 import axios from 'axios';
 import settings from './settings.js';
+import { fileURLToPath } from 'url';
 
 // API configuration
 const API_URL: string = 'https://api.liquipedia.net/api/v3/match';
@@ -656,18 +657,20 @@ async function mainTournament(tournamentId: string): Promise<void> {
 }
 
 // CLI execution
-const args = process.argv.slice(2);
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    const args = process.argv.slice(2);
 
-if (args.length > 0) {
-    // Mode spécifique: importer les matches d'un tournoi
-    console.log(`🎯 Mode spécifique de tournoi: ${args[0]}`);
-    mainTournament(args[0]!).catch(error => {
-        console.error('Erreur non gérée:', error);
-        process.exit(1);
-    });
-} else {
-    main().catch(error => {
-        console.error('Erreur non gérée:', error);
-        process.exit(1);
-    });
+    if (args.length > 0) {
+        // Mode spécifique: importer les matches d'un tournoi
+        console.log(`🎯 Mode spécifique de tournoi: ${args[0]}`);
+        mainTournament(args[0]!).catch(error => {
+            console.error('Erreur non gérée:', error);
+            process.exit(1);
+        });
+    } else {
+        main().catch(error => {
+            console.error('Erreur non gérée:', error);
+            process.exit(1);
+        });
+    }
 }

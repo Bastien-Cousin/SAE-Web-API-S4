@@ -3,6 +3,7 @@ import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 import settings from './settings.js';
+import { fileURLToPath } from 'url';
 
 // Fonction pour ajouter un délai
 function sleep(ms: number): Promise<void> {
@@ -258,7 +259,9 @@ process.on('SIGTERM', async () => {
 });
 
 // Démarrer le script
-main().catch((e) => {
-    console.error('❌ Erreur fatale:', e.message);
-    process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch((e) => {
+        console.error('❌ Erreur fatale:', e.message);
+        process.exit(1);
+    });
+}
