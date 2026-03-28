@@ -73,17 +73,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
 
         $context = stream_context_create($options);
-        $result = @file_get_contents('http://api:3070/api/players', false, $context);
 
-        if ($result === false) {
-            $error = "Impossible de contacter le serveur API.";
-        } else {
-            $response = json_decode($result, true);
+        $candidateUrls = [
+            'http://api:3070/api/players',
+            // Fallback pour certains environnements qui exposent la route sans préfixe /api
+            'http://api:3070/players',
+        ];
+
+        $result = false;
+        $statusCode = 0;
+
+        foreach ($candidateUrls as $url) {
+            $result = @file_get_contents($url, false, $context);
+
             $statusCode = 200;
             if (!empty($http_response_header)) {
                 preg_match('/HTTP\/\d\.\d\s+(\d+)/', $http_response_header[0], $matches);
                 $statusCode = isset($matches[1]) ? (int) $matches[1] : 200;
             }
+
+            // Si la route n'existe pas sur ce chemin, on tente le suivant.
+            if ($statusCode === 404) {
+                continue;
+            }
+
+            break;
+        }
+
+        if ($result === false) {
+            $error = "Impossible de contacter le serveur API.";
+        } else {
+            $response = json_decode($result, true);
 
             if ($statusCode >= 400) {
                 if (is_array($response) && isset($response['error']) && is_string($response['error'])) {
