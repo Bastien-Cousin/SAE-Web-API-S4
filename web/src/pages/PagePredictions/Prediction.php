@@ -73,27 +73,100 @@ foreach ($h2hStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
 }
 
 $h2hJson = json_encode($h2h, JSON_HEX_TAG);
-$calStmt = $pdo->query("
-    SELECT m.date, m.tournament, t1.name AS team1, t2.name AS team2
-    FROM match m
-    LEFT JOIN team t1 ON t1.pageid = m.team1_id
-    LEFT JOIN team t2 ON t2.pageid = m.team2_id
-    WHERE m.date BETWEEN NOW() - INTERVAL '30 days' AND NOW() + INTERVAL '90 days'
-        AND COALESCE(m.status, '') <> 'prediction_only'
-        AND m.team1_id IS NOT NULL AND m.team2_id IS NOT NULL
-    ORDER BY m.date ASC LIMIT 200
+
+// Récupérer les tournois avec leurs dates de début/fin
+$tournamentsStmt = $pdo->query("
+    SELECT DISTINCT t.name, t.startdate, t.enddate
+    FROM tournament t
+    WHERE t.name IS NOT NULL AND t.startdate IS NOT NULL AND t.enddate IS NOT NULL
+    ORDER BY t.startdate DESC
 ");
-$calEvents = [];
-foreach ($calStmt->fetchAll(PDO::FETCH_ASSOC) as $match) {
-    if (!$match['date'])
-        continue;
-    $calEvents[] = [
-        'title' => $match['team1'] . ' vs ' . $match['team2'],
-        'date' => (new DateTime($match['date']))->format('Y-m-d'),
-        'extendedProps' => ['tournament' => $match['tournament'] ?? ''],
+
+// Générer des couleurs uniques pour chaque tournoi
+$tournamentColors = [];
+$colorPalette = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B88B', '#ABEBC6'];
+$colorIndex = 0;
+
+$backgroundEvents = []; // Pour les périodes de tournoi
+foreach ($tournamentsStmt->fetchAll(PDO::FETCH_ASSOC) as $tournament) {
+    if (!$tournament['startdate'] || !$tournament['enddate'] || !$tournament['name']) continue;
+    
+    $tournamentName = trim($tournament['name']);
+    
+    // Assigner une couleur unique au tournoi
+    if (!isset($tournamentColors[$tournamentName])) {
+        $tournamentColors[$tournamentName] = $colorPalette[$colorIndex % count($colorPalette)];
+        $colorIndex++;
+    }
+    
+    $startDate = new DateTime($tournament['startdate']);
+    $endDate = new DateTime($tournament['enddate']);
+    // Ajouter 1 jour à endDate pour que la coloration inclue le dernier jour
+    $endDate->add(new DateInterval('P1D'));
+    
+    // Créer un événement de fond pour le tournoi
+    $backgroundEvents[] = [
+        'title' => $tournamentName,
+        'start' => $startDate->format('Y-m-d'),
+        'end' => $endDate->format('Y-m-d'),
+        'backgroundColor' => $tournamentColors[$tournamentName],
+        'borderColor' => $tournamentColors[$tournamentName],
+        'display' => 'background',
+        'extendedProps' => [
+            'isTournamentBackground' => true,
+            'tournament' => $tournamentName
+        ]
     ];
 }
-$calEventsJson = json_encode($calEvents, JSON_HEX_TAG);
+
+// Récupérer les informations du calendrier avec une plage plus large et inclure tous les tournois
+$calStmt = $pdo->query("
+    SELECT m.pageid, m.date, t.name AS tournament, t1.name AS team1, t2.name AS team2
+    FROM match m
+    LEFT JOIN tournament t ON t.name = m.tournament
+    LEFT JOIN team t1 ON t1.pageid = m.team1_id
+    LEFT JOIN team t2 ON t2.pageid = m.team2_id
+    WHERE m.team1_id IS NOT NULL AND m.team2_id IS NOT NULL
+       AND m.date IS NOT NULL
+    ORDER BY m.date DESC LIMIT 200
+");
+
+$calEvents = [];
+$matchCount = 0;
+foreach ($calStmt->fetchAll(PDO::FETCH_ASSOC) as $match) {
+    $matchCount++;
+    if (!$match['date'] || !$match['team1'] || !$match['team2'])
+        continue;
+    
+    $tournament = (!empty($match['tournament']) && is_string($match['tournament'])) ? trim($match['tournament']) : 'Sans tournoi';
+    $date = new DateTime($match['date']);
+    
+    // Assigner une couleur unique au tournoi
+    if (!isset($tournamentColors[$tournament])) {
+        $tournamentColors[$tournament] = $colorPalette[$colorIndex % count($colorPalette)];
+        $colorIndex++;
+    }
+    
+    $calEvents[] = [
+        'title' => $match['team1'] . ' vs ' . $match['team2'],
+        'date' => $date->format('Y-m-d'),
+        'backgroundColor' => $tournamentColors[$tournament],
+        'borderColor' => $tournamentColors[$tournament],
+        'textColor' => '#FFFFFF',
+        'display' => 'auto',
+        'extendedProps' => [
+            'tournament' => $tournament,
+            'team1' => $match['team1'],
+            'team2' => $match['team2']
+        ],
+    ];
+}
+
+// Fusionner les événements de fond et les matchs
+$allEvents = array_merge($backgroundEvents, $calEvents);
+
+$calEventsJson = json_encode($allEvents, JSON_HEX_TAG);
+$tournamentColorsJson = json_encode($tournamentColors, JSON_HEX_TAG);
 
 $userPredictions = [];
 $predictionMessage = null;
@@ -323,265 +396,301 @@ if ($predictionUserId !== null) {
 
         <script>
             const stats = <?= $statsJson ?>;
-                                                        const h2h = <?= $h2hJson ?>;
-                                                
-                                                        const MAPS = ['Mirage', 'Inferno', 'Nuke', 'Ancient', 'Anubis', 'Dust2', 'Vertigo'];
-                                                
-                                                        const selTeam1 = document.getElementById('team1');
-                                                        const selTeam2 = document.getElementById('team2');
-                                                        const bo = document.getElementById('bo');
-                                                        const heure = document.getElementById('heure');
-                                                        const name1 = document.getElementById('name1');
-                                                        const name2 = document.getElementById('name2');
-                                                        const boBadge = document.querySelector('.bestof-badge');
-                                                        const heureBadge = document.querySelector('.heure-badge');
-                                                        const leftStats = document.querySelector('.left-stats');
-                                                        const rightStats = document.querySelector('.right-stats');
-                                                        const mapsContainer = document.getElementById('maps-container');
-                                                
-                                                        let selectedTeam1 = '';
-                                                        let selectedTeam2 = '';
-                                                
-                                                        function applyTeamDisplay(id, nameEl, statsEl, opponentId = null) {
-                                                            const s = stats[id];
-                                                            if (!s) return;
-                                                            nameEl.textContent = s.name;
-                                                
-                                                            let html = `<div class="stat-tag">WR : ${s.wr ?? 'N/A'}</div>`;
-                                                
-                                                            if (opponentId && h2h[id]?.[opponentId]) {
-                                                                const {
-                                                                    wins,
-                                                                    losses
-                                                                } = h2h[id][opponentId];
-                                                                html += `<div class="stat-tag">H2H : ${wins}W / ${losses}L</div>`;
-                                                            }
-                                                
-                                                            statsEl.innerHTML = html;
-                                                        }
-                                                
-                                                        function clearTeamDisplay(nameEl, statsEl, placeholder) {
-                                                            nameEl.textContent = placeholder;
-                                                            statsEl.innerHTML = '<div class="stat-tag">WR</div>';
-                                                        }
-                                                
-                                                        function refreshDisabled(ts, toDisable) {
-                                                            Object.values(ts.options).forEach(opt => {
-                                                                ts.updateOption(opt.value, {
-                                                                    value: opt.value,
-                                                                    text: stats[opt.value]?.name ?? opt.text,
-                                                                    disabled: !!(toDisable && opt.value === toDisable),
-                                                                });
-                                                            });
-                                                            ts.refreshOptions(false);
-                                                        }
-                                                
-                                                        const tsTeam1 = new TomSelect('#team1', {
-                                                            sortField: {
-                                                                field: 'text',
-                                                                direction: 'asc'
-                                                            },
-                                                            onChange(val) {
-                                                                selectedTeam1 = val;
-                                                                val ? applyTeamDisplay(val, name1, leftStats, selectedTeam2) :
-                                                                    clearTeamDisplay(name1, leftStats, 'équipe 1');
-                                                                refreshDisabled(tsTeam2, val);
-                                                                updateMapLabels();
-                                                            }
-                                                        });
-                                                
-                                                        const tsTeam2 = new TomSelect('#team2', {
-                                                            sortField: {
-                                                                field: 'text',
-                                                                direction: 'asc'
-                                                            },
-                                                            onChange(val) {
-                                                                selectedTeam2 = val;
-                                                                val ? applyTeamDisplay(val, name2, rightStats, selectedTeam1) :
-                                                                    clearTeamDisplay(name2, rightStats, 'équipe 2');
-                                                                refreshDisabled(tsTeam1, val);
-                                                                updateMapLabels();
-                                                            }
-                                                        });
-                                                
-                                                        const tsBO = new TomSelect('#bo', {});
-                                                        tsBO.on('change', val => {
-                                                            boBadge.textContent = val ? 'BO' + val : 'Best of';
-                                                            buildMapRows(parseInt(val) || 0);
-                                                        });
-                                                
-                                                        heure.onchange = () => {
-                                                            heureBadge.textContent = heure.value || 'heure';
-                                                        };
-                                                
-                                                        function buildMapRows(count) {
-                                                            mapsContainer.innerHTML = '';
-                                                            if (!count) return;
-                                                
-                                                            for (let i = 1; i <= count; i++) {
-                                                                const t1 = stats[selectedTeam1]?.name || 'Équipe 1';
-                                                                const t2 = stats[selectedTeam2]?.name || 'Équipe 2';
-                                                
-                                                                const row = document.createElement('div');
-                                                                row.className = 'map-row';
-                                                                row.dataset.mapIndex = i;
-                                                
-                                                                const mapOptions = MAPS.map(m =>
-                                                                    `<option value="${m}">${m}</option>`
-                                                                ).join('');
-                                                
-                                                                row.innerHTML = `
-                                                                    <div class="map-num">M${i}</div>
-                                                                    <select class="map-select" data-index="${i}">
-                                                                        <option value="">— Map —</option>
-                                                                        ${mapOptions}
-                                                                    </select>
-                                                                    <div class="score-block">
-                                                                        <input type="number" class="score-input score-t1" min="0" max="30"
-                                                                                placeholder="${t1.split(' ')[0]}" title="Score ${t1}">
-                                                                        <span class="score-sep">–</span>
-                                                                        <input type="number" class="score-input score-t2" min="0" max="30"
-                                                                                placeholder="${t2.split(' ')[0]}" title="Score ${t2}">
-                                                                    </div>
-                                                                `;
-                                                                mapsContainer.appendChild(row);
-                                                            }
-                                                
-                                                            mapsContainer.querySelectorAll('.map-select').forEach(sel =>
-                                                                sel.addEventListener('change', syncMapOptions)
-                                                            );
-                                                            mapsContainer.querySelectorAll('.score-input').forEach(inp =>
-                                                                inp.addEventListener('input', checkWinner)
-                                                            );
-                                                        }
-                                                
-                                                        function syncMapOptions() {
-                                                            const rows = mapsContainer.querySelectorAll('.map-row:not(.map-locked)');
-                                                            const chosen = {};
-                                                            rows.forEach(row => {
-                                                                const val = row.querySelector('.map-select').value;
-                                                                if (val) chosen[val] = true;
-                                                            });
-                                                            rows.forEach(row => {
-                                                                const sel = row.querySelector('.map-select');
-                                                                const current = sel.value;
-                                                                Array.from(sel.options).forEach(opt => {
-                                                                    if (!opt.value) return;
-                                                                    opt.disabled = !!(chosen[opt.value] && opt.value !== current);
-                                                                });
-                                                            });
-                                                        }
-                                                
-                                                        function checkWinner() {
-                                                            const boVal = parseInt(tsBO.getValue()) || 0;
-                                                            if (!boVal) return;
-                                                
-                                                            const needed = Math.ceil(boVal / 2);
-                                                            const rows = mapsContainer.querySelectorAll('.map-row');
-                                                            let wins1 = 0,
-                                                                wins2 = 0;
-                                                
-                                                            rows.forEach(row => {
-                                                                row.classList.remove('map-locked');
-                                                
-                                                                if (wins1 >= needed || wins2 >= needed) {
-                                                                    row.classList.add('map-locked');
-                                                                    return;
-                                                                }
-                                                
-                                                                const t1Val = row.querySelector('.score-t1').value;
-                                                                const t2Val = row.querySelector('.score-t2').value;
-                                                                const mapVal = row.querySelector('.map-select').value;
-                                                
-                                                                if (mapVal && t1Val !== '' && t2Val !== '') {
-                                                                    const t1 = parseInt(t1Val);
-                                                                    const t2 = parseInt(t2Val);
-                                                                    if (t1 > t2) wins1++;
-                                                                    else if (t2 > t1) wins2++;
-                                                                }
-                                                            });
-                                                
-                                                            syncMapOptions();
-                                                        }
-                                                
-                                                
-                                                        function updateMapLabels() {
-                                                            const t1 = stats[selectedTeam1]?.name.split(' ')[0] || 'Éq.1';
-                                                            const t2 = stats[selectedTeam2]?.name.split(' ')[0] || 'Éq.2';
-                                                            document.querySelectorAll('.score-t1').forEach(el => el.placeholder = t1);
-                                                            document.querySelectorAll('.score-t2').forEach(el => el.placeholder = t2);
-                                                            syncMapOptions();
-                                                        }
-                                                
-                                                        function getMapsData() {
-                                                            const rows = mapsContainer.querySelectorAll('.map-row:not(.map-locked)');
-                                                            return Array.from(rows).map(row => ({
-                                                                map: row.querySelector('.map-select').value,
-                                                                score_t1: row.querySelector('.score-t1').value,
-                                                                score_t2: row.querySelector('.score-t2').value,
-                                                            }));
-                                                        }
-                                                
-                                                        document.getElementById('btn-lancer').addEventListener('click', () => {
-                                                            const t1 = selectedTeam1;
-                                                            const t2 = selectedTeam2;
-                                                            const boV = tsBO.getValue();
-                                                            const h = heure.value;
-                                                
-                                                            if (!t1 || !t2) {
-                                                                alert('Sélectionne les deux équipes !');
-                                                                return;
-                                                            }
-                                                            if (!boV) {
-                                                                alert('Choisis un format Best of !');
-                                                                return;
-                                                            }
-                                                
-                                                            const mapsData = getMapsData();
-                                                            const allMapsChosen = mapsData.every(m => m.map !== '');
-                                                            if (!allMapsChosen) {
-                                                                alert('Sélectionne toutes les maps !');
-                                                                return;
-                                                            }
-                                                
-                                                            const params = new URLSearchParams({
-                                                                team1_id: t1,
-                                                                team1_name: stats[t1]?.name ?? '',
-                                                                team2_id: t2,
-                                                                team2_name: stats[t2]?.name ?? '',
-                                                                bo: 'BO' + boV,
-                                                                heure: h,
-                                                                team1_wr: stats[t1]?.wr ?? '',
-                                                                team2_wr: stats[t2]?.wr ?? '',
-                                                                maps: JSON.stringify(mapsData),
-                                                            });
-                                                            window.location.href = 'userPrediction.php?' + params.toString();
-                                                        });
-                                                
-                                                        document.querySelectorAll('nav a').forEach(link => {
-                                                            link.addEventListener('click', () => {
-                                                                document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
-                                                                link.classList.add('active');
-                                                            });
-                                                        });
-                                                        document.addEventListener('DOMContentLoaded', function() {
-                                                            const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-                                                                initialView: 'dayGridMonth',
-                                                                locale: 'fr',
-                                                                headerToolbar: {
-                                                                    left: 'prev,next today',
-                                                                    center: 'title',
-                                                                    right: 'dayGridMonth,timeGridWeek'
-                                                                },
-                                                                events: <?= $calEventsJson ?>,
-                                                                eventClick: function(info) {
-                                                                    const t = info.event.extendedProps.tournament;
-                                                                    alert(info.event.title + (t ? '\n🏆 ' + t : ''));
-                                                                }
-                                                            });
-                                                            calendar.render();
-                                                        });
-                                                    </script>
+            const h2h = <?= $h2hJson ?>;
+            const tournamentColors = <?= $tournamentColorsJson ?>;
+            
+            const MAPS = ['Mirage', 'Inferno', 'Nuke', 'Ancient', 'Anubis', 'Dust2', 'Vertigo'];
+            
+            const selTeam1 = document.getElementById('team1');
+            const selTeam2 = document.getElementById('team2');
+            const bo = document.getElementById('bo');
+            const heure = document.getElementById('heure');
+            const name1 = document.getElementById('name1');
+            const name2 = document.getElementById('name2');
+            const boBadge = document.querySelector('.bestof-badge');
+            const heureBadge = document.querySelector('.heure-badge');
+            const leftStats = document.querySelector('.left-stats');
+            const rightStats = document.querySelector('.right-stats');
+            const mapsContainer = document.getElementById('maps-container');
+            
+            let selectedTeam1 = '';
+            let selectedTeam2 = '';
+            
+            function applyTeamDisplay(id, nameEl, statsEl, opponentId = null) {
+                const s = stats[id];
+                if (!s) return;
+                nameEl.textContent = s.name;
+                
+                let html = `<div class="stat-tag">WR : ${s.wr ?? 'N/A'}</div>`;
+                
+                if (opponentId && h2h[id]?.[opponentId]) {
+                    const { wins, losses } = h2h[id][opponentId];
+                    html += `<div class="stat-tag">H2H : ${wins}W / ${losses}L</div>`;
+                }
+                
+                statsEl.innerHTML = html;
+            }
+            
+            function clearTeamDisplay(nameEl, statsEl, placeholder) {
+                nameEl.textContent = placeholder;
+                statsEl.innerHTML = '<div class="stat-tag">WR</div>';
+            }
+            
+            function refreshDisabled(ts, toDisable) {
+                Object.values(ts.options).forEach(opt => {
+                    ts.updateOption(opt.value, {
+                        value: opt.value,
+                        text: stats[opt.value]?.name ?? opt.text,
+                        disabled: !!(toDisable && opt.value === toDisable),
+                    });
+                });
+                ts.refreshOptions(false);
+            }
+            
+            const tsTeam1 = new TomSelect('#team1', {
+                sortField: { field: 'text', direction: 'asc' },
+                onChange(val) {
+                    selectedTeam1 = val;
+                    val ? applyTeamDisplay(val, name1, leftStats, selectedTeam2) :
+                        clearTeamDisplay(name1, leftStats, 'équipe 1');
+                    refreshDisabled(tsTeam2, val);
+                    updateMapLabels();
+                }
+            });
+            
+            const tsTeam2 = new TomSelect('#team2', {
+                sortField: { field: 'text', direction: 'asc' },
+                onChange(val) {
+                    selectedTeam2 = val;
+                    val ? applyTeamDisplay(val, name2, rightStats, selectedTeam1) :
+                        clearTeamDisplay(name2, rightStats, 'équipe 2');
+                    refreshDisabled(tsTeam1, val);
+                    updateMapLabels();
+                }
+            });
+            
+            const tsBO = new TomSelect('#bo', {});
+            tsBO.on('change', val => {
+                boBadge.textContent = val ? 'BO' + val : 'Best of';
+                buildMapRows(parseInt(val) || 0);
+            });
+            
+            heure.onchange = () => {
+                heureBadge.textContent = heure.value || 'heure';
+            };
+            
+            function buildMapRows(count) {
+                mapsContainer.innerHTML = '';
+                if (!count) return;
+                
+                for (let i = 1; i <= count; i++) {
+                    const t1 = stats[selectedTeam1]?.name || 'Équipe 1';
+                    const t2 = stats[selectedTeam2]?.name || 'Équipe 2';
+                    
+                    const row = document.createElement('div');
+                    row.className = 'map-row';
+                    row.dataset.mapIndex = i;
+                    
+                    const mapOptions = MAPS.map(m =>
+                        `<option value="${m}">${m}</option>`
+                    ).join('');
+                    
+                    row.innerHTML = `
+                        <div class="map-num">M${i}</div>
+                        <select class="map-select" data-index="${i}">
+                            <option value="">— Map —</option>
+                            ${mapOptions}
+                        </select>
+                        <div class="score-block">
+                            <input type="number" class="score-input score-t1" min="0" max="30"
+                                    placeholder="${t1.split(' ')[0]}" title="Score ${t1}">
+                            <span class="score-sep">–</span>
+                            <input type="number" class="score-input score-t2" min="0" max="30"
+                                    placeholder="${t2.split(' ')[0]}" title="Score ${t2}">
+                        </div>
+                    `;
+                    mapsContainer.appendChild(row);
+                }
+                
+                mapsContainer.querySelectorAll('.map-select').forEach(sel =>
+                    sel.addEventListener('change', syncMapOptions)
+                );
+                mapsContainer.querySelectorAll('.score-input').forEach(inp =>
+                    inp.addEventListener('input', checkWinner)
+                );
+            }
+            
+            function syncMapOptions() {
+                const rows = mapsContainer.querySelectorAll('.map-row:not(.map-locked)');
+                const chosen = {};
+                rows.forEach(row => {
+                    const val = row.querySelector('.map-select').value;
+                    if (val) chosen[val] = true;
+                });
+                rows.forEach(row => {
+                    const sel = row.querySelector('.map-select');
+                    const current = sel.value;
+                    Array.from(sel.options).forEach(opt => {
+                        if (!opt.value) return;
+                        opt.disabled = !!(chosen[opt.value] && opt.value !== current);
+                    });
+                });
+            }
+            
+            function checkWinner() {
+                const boVal = parseInt(tsBO.getValue()) || 0;
+                if (!boVal) return;
+                
+                const needed = Math.ceil(boVal / 2);
+                const rows = mapsContainer.querySelectorAll('.map-row');
+                let wins1 = 0, wins2 = 0;
+                
+                rows.forEach(row => {
+                    row.classList.remove('map-locked');
+                    
+                    if (wins1 >= needed || wins2 >= needed) {
+                        row.classList.add('map-locked');
+                        return;
+                    }
+                    
+                    const t1Val = row.querySelector('.score-t1').value;
+                    const t2Val = row.querySelector('.score-t2').value;
+                    const mapVal = row.querySelector('.map-select').value;
+                    
+                    if (mapVal && t1Val !== '' && t2Val !== '') {
+                        const t1 = parseInt(t1Val);
+                        const t2 = parseInt(t2Val);
+                        if (t1 > t2) wins1++;
+                        else if (t2 > t1) wins2++;
+                    }
+                });
+                
+                syncMapOptions();
+            }
+            
+            function updateMapLabels() {
+                const t1 = stats[selectedTeam1]?.name.split(' ')[0] || 'Éq.1';
+                const t2 = stats[selectedTeam2]?.name.split(' ')[0] || 'Éq.2';
+                document.querySelectorAll('.score-t1').forEach(el => el.placeholder = t1);
+                document.querySelectorAll('.score-t2').forEach(el => el.placeholder = t2);
+                syncMapOptions();
+            }
+            
+            function getMapsData() {
+                const rows = mapsContainer.querySelectorAll('.map-row:not(.map-locked)');
+                return Array.from(rows).map(row => ({
+                    map: row.querySelector('.map-select').value,
+                    score_t1: row.querySelector('.score-t1').value,
+                    score_t2: row.querySelector('.score-t2').value,
+                }));
+            }
+            
+            document.getElementById('btn-lancer').addEventListener('click', () => {
+                const t1 = selectedTeam1;
+                const t2 = selectedTeam2;
+                const boV = tsBO.getValue();
+                const h = heure.value;
+                
+                if (!t1 || !t2) {
+                    alert('Sélectionne les deux équipes !');
+                    return;
+                }
+                if (!boV) {
+                    alert('Choisis un format Best of !');
+                    return;
+                }
+                
+                const mapsData = getMapsData();
+                const allMapsChosen = mapsData.every(m => m.map !== '');
+                if (!allMapsChosen) {
+                    alert('Sélectionne toutes les maps !');
+                    return;
+                }
+                
+                const params = new URLSearchParams({
+                    team1_id: t1,
+                    team1_name: stats[t1]?.name ?? '',
+                    team2_id: t2,
+                    team2_name: stats[t2]?.name ?? '',
+                    bo: 'BO' + boV,
+                    heure: h,
+                    team1_wr: stats[t1]?.wr ?? '',
+                    team2_wr: stats[t2]?.wr ?? '',
+                    maps: JSON.stringify(mapsData),
+                });
+                window.location.href = 'userPrediction.php?' + params.toString();
+            });
+            
+            document.querySelectorAll('nav a').forEach(link => {
+                link.addEventListener('click', () => {
+                    document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+                    link.classList.add('active');
+                });
+            });
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                // Initialiser FullCalendar
+                const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+                    initialView: 'dayGridMonth',
+                    locale: 'fr',
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek'
+                    },
+                    events: <?= $calEventsJson ?>,
+                    eventClick: function(info) {
+                        // Ne pas afficher le popup si c'est un événement de background
+                        if (info.event.extendedProps.isTournamentBackground) {
+                            return;
+                        }
+                        const tournament = info.event.extendedProps.tournament;
+                        const team1 = info.event.extendedProps.team1;
+                        const team2 = info.event.extendedProps.team2;
+                        const message = `⚔️ ${team1} vs ${team2}\n🏆 ${tournament}`;
+                        alert(message);
+                    },
+                    eventDisplay: 'block',
+                    eventTimeFormat: {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        meridiem: false
+                    },
+                    datesSet: function() {
+                        // Appliquer les bordures de tournoi aux cellules de jour
+                        applyTournamentBorders(calendar, tournamentColors);
+                    }
+                });
+                calendar.render();
+            });
+            
+            // Fonction pour appliquer les bordures de tournoi aux cellules
+            function applyTournamentBorders(calendar, colors) {
+                // Récupérer tous les événements de background (tournois)
+                const events = calendar.getEvents();
+                const dayCells = document.querySelectorAll('.fc-daygrid-day');
+                
+                events.forEach(event => {
+                    if (!event.extendedProps.isTournamentBackground) return;
+                    
+                    const start = new Date(event.startStr);
+                    const end = new Date(event.endStr);
+                    const color = colors[event.title];
+                    
+                    // Appliquer la bordure à chaque jour du tournoi
+                    dayCells.forEach(cell => {
+                        const dateStr = cell.getAttribute('data-date');
+                        if (!dateStr) return;
+                        
+                        const cellDate = new Date(dateStr);
+                        if (cellDate >= start && cellDate < end) {
+                            cell.style.borderLeft = `4px solid ${color}`;
+                            cell.style.paddingLeft = '8px';
+                        }
+                    });
+                });
+            }
+        </script>
                                                 </body>
                                                 
                                                 </html>
