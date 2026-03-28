@@ -1,8 +1,12 @@
 import { fileURLToPath } from 'url'
 import * as path from 'path'
 import * as dotenv from 'dotenv'
-import pg from 'pg'
+import pg, { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
+import { importTeams } from '../src/import_donnees/equipes_cs.js'
+import { importPlayers } from '../src/import_donnees/joueurs_cs.js'
+import { importMatches } from '../src/import_donnees/matchs_cs.js'
+import { importTournaments } from '../src/import_donnees/tournois_cs.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -152,6 +156,47 @@ async function main() {
     })
 
     console.log('Seed completed!')
+
+    // Run Liquipedia imports
+    console.log('\n' + '='.repeat(60))
+    console.log('🚀 Starting Liquipedia data imports...')
+    console.log('='.repeat(60))
+
+    const pool = new Pool({
+        connectionString,
+    })
+
+    try {
+        const importSteps = [
+            { name: 'Équipes', fn: () => importTeams(pool) },
+            { name: 'Joueurs', fn: () => importPlayers(pool) },
+            { name: 'Matchs', fn: () => importMatches(pool) },
+            { name: 'Tournois', fn: () => importTournaments(pool) },
+        ]
+
+        for (const step of importSteps) {
+            console.log(`\n${'='.repeat(60)}`)
+            console.log(`📥 Running: ${step.name}`)
+            console.log('='.repeat(60))
+
+            try {
+                const ok = await step.fn()
+                if (ok) {
+                    console.log(`✅ ${step.name} imported successfully\n`)
+                } else {
+                    console.error(`❌ ${step.name} failed\n`)
+                }
+            } catch (error: any) {
+                console.error(`❌ ${step.name} error: ${error.message}\n`)
+            }
+        }
+
+        console.log('='.repeat(60))
+        console.log('✅ All imports completed')
+        console.log('='.repeat(60))
+    } finally {
+        await pool.end()
+    }
 }
 
 main()
