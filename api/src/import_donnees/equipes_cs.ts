@@ -1,6 +1,7 @@
 import { Pool, type PoolClient } from 'pg';
 import axios from 'axios';
 import settings from './settings.js';
+import { fileURLToPath } from 'url';
 
 // Interface pour les données d'équipe
 interface team {
@@ -254,7 +255,9 @@ process.on('SIGTERM', async () => {
 });
 
 // Démarrage en CLI
-main().catch(async (error: any) => {
-    console.error(`❌ Erreur fatale: ${error.message}`);
-    process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch(async (error: any) => {
+        console.error(`❌ Erreur fatale: ${error.message}`);
+        process.exit(1);
+    });
+}
