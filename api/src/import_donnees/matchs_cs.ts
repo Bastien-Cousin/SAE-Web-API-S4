@@ -114,7 +114,7 @@ export async function importMatches(pool: Pool): Promise<boolean> {
         const MAX_MATCHES: number = 1000;
         const params: PaginationParams = {
             wiki: 'counterstrike',
-            conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2025-01-01]]',
+            conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2020-01-01]]',
             limit: 100,
             offset: 0
         };
@@ -130,7 +130,7 @@ export async function importMatches(pool: Pool): Promise<boolean> {
                 const response = await axios.get<{ result: match[] }>(url, {
                     headers: headers,
                     params: params,
-                    timeout: 10000
+                    timeout: 30000
                 });
 
                 if (response.status === 200) {
@@ -351,14 +351,43 @@ async function linkTeamsToMatchesExport(client: PoolClient): Promise<void> {
                     continue;
                 }
 
-                const team1Result = await client.query(
+                // Récupérer les IDs des équipes (recherche exacte + insensible à la casse)
+                let team1Result = await client.query(
                     'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
                     [team1Name]
                 );
-                const team2Result = await client.query(
+                let team2Result = await client.query(
                     'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
                     [team2Name]
                 );
+
+                // Si pas de correspondance exacte, essayer avec LIKE (recherche flexible)
+                if (team1Result.rows.length === 0) {
+                    team1Result = await client.query(
+                        'SELECT pageid FROM team WHERE LOWER(name) LIKE LOWER($1) LIMIT 1',
+                        [`%${team1Name}%`]
+                    );
+                }
+                if (team2Result.rows.length === 0) {
+                    team2Result = await client.query(
+                        'SELECT pageid FROM team WHERE LOWER(name) LIKE LOWER($1) LIMIT 1',
+                        [`%${team2Name}%`]
+                    );
+                }
+
+                // Essayer aussi une recherche inverse (le nom de la DB contient le nom de l'API)
+                if (team1Result.rows.length === 0) {
+                    team1Result = await client.query(
+                        'SELECT pageid FROM team WHERE $1 LIKE LOWER(name) || \'%\' LIMIT 1',
+                        [team1Name.toLowerCase()]
+                    );
+                }
+                if (team2Result.rows.length === 0) {
+                    team2Result = await client.query(
+                        'SELECT pageid FROM team WHERE $1 LIKE LOWER(name) || \'%\' LIMIT 1',
+                        [team2Name.toLowerCase()]
+                    );
+                }
 
                 if (team1Result.rows.length === 0 || team2Result.rows.length === 0) {
                     skipped++;
@@ -414,7 +443,7 @@ async function importTournamentMatches(tournamentName: string): Promise<void> {
                 const response = await axios.get<{ result: match[] }>(url, {
                     headers: headers,
                     params: params,
-                    timeout: 10000
+                    timeout: 30000
                 });
 
                 if (response.status === 200) {
@@ -603,14 +632,42 @@ async function linkTeamsToMatches(client: PoolClient): Promise<void> {
                 }
 
                 // Récupérer les IDs des équipes (recherche exacte + insensible à la casse)
-                const team1Result = await client.query(
+                let team1Result = await client.query(
                     'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
                     [team1Name]
                 );
-                const team2Result = await client.query(
+                let team2Result = await client.query(
                     'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
                     [team2Name]
                 );
+
+                // Si pas de correspondance exacte, essayer avec LIKE (recherche flexible)
+                if (team1Result.rows.length === 0) {
+                    team1Result = await client.query(
+                        'SELECT pageid FROM team WHERE LOWER(name) LIKE LOWER($1) LIMIT 1',
+                        [`%${team1Name}%`]
+                    );
+                }
+                if (team2Result.rows.length === 0) {
+                    team2Result = await client.query(
+                        'SELECT pageid FROM team WHERE LOWER(name) LIKE LOWER($1) LIMIT 1',
+                        [`%${team2Name}%`]
+                    );
+                }
+
+                // Essayer aussi une recherche inverse (le nom de la DB contient le nom de l'API)
+                if (team1Result.rows.length === 0) {
+                    team1Result = await client.query(
+                        'SELECT pageid FROM team WHERE $1 LIKE LOWER(name) || \'%\' LIMIT 1',
+                        [team1Name.toLowerCase()]
+                    );
+                }
+                if (team2Result.rows.length === 0) {
+                    team2Result = await client.query(
+                        'SELECT pageid FROM team WHERE $1 LIKE LOWER(name) || \'%\' LIMIT 1',
+                        [team2Name.toLowerCase()]
+                    );
+                }
 
                 if (team1Result.rows.length === 0 || team2Result.rows.length === 0) {
                     console.log(`   ⏭️  Match ${row.pageid}: équipes non trouvées (${team1Name} vs ${team2Name})`);
@@ -653,7 +710,7 @@ async function updateMatches(): Promise<void> {
     const MAX_MATCHES: number = 1000;
     const params: PaginationParams = {
         wiki: 'counterstrike',
-        conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2025-01-01]]',
+        conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2020-01-01]]',
         limit: 100,
         offset: 0
     };
@@ -670,7 +727,7 @@ async function updateMatches(): Promise<void> {
                 const response = await axios.get<{ result: match[] }>(url, {
                     headers: headers,
                     params: params,
-                    timeout: 10000
+                    timeout: 30000
                 });
 
                 console.log(`   Status Code: ${response.status}`);
