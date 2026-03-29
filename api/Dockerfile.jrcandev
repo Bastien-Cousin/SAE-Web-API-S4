@@ -25,6 +25,8 @@ FROM node:20-alpine AS runtime
 
 WORKDIR /app
 
+RUN apk add --no-cache netcat-openbsd
+
 # 1. Dépendances
 COPY package*.json ./
 RUN npm install --omit=dev
@@ -39,4 +41,8 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 3070
 
-CMD ["node", "dist/index.js"]
+COPY entrypoint.production.sh /app/entrypoint.production.sh
+RUN chmod +x /app/entrypoint.production.sh && \
+    sed -i 's/\r$//' /app/entrypoint.production.sh
+
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.production.sh"]

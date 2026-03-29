@@ -80,8 +80,8 @@ export async function importPlayers(pool: Pool): Promise<boolean> {
             }
         } catch (error: any) {
             if (error.response?.status === 429) {
-                console.warn(`   ⚠️ Rate limit détecté (429) - attente 60s...`);
-                await sleep(60000);
+                console.warn(`   ⚠️ Rate limit détecté (429) - attente 2h...`);
+                await sleep(7200000);
                 continue;
             }
             console.error(`   ❌ Erreur requête : ${error.message}`);
