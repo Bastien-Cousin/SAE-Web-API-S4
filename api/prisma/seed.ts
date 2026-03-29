@@ -194,6 +194,39 @@ async function main() {
         console.log('='.repeat(60))
         console.log('✅ All imports completed')
         console.log('='.repeat(60))
+
+        // Run asset downloads and fixes
+        console.log('\n' + '='.repeat(60))
+        console.log('🎨 Starting asset downloads and fixes...')
+        console.log('='.repeat(60))
+
+        const assetSteps = [
+            { name: 'Télécharger logos d\'équipes', command: 'npx tsx ./src/scripts/download-team-logos.ts' },
+            { name: 'Corriger URLs logos d\'équipes', command: 'npx tsx ./src/scripts/fix-team-logo-urls.ts' },
+            { name: 'Télécharger bannières de tournois', command: 'npx tsx ./src/scripts/download-tournament-banners.ts' },
+            { name: 'Corriger URLs bannières de tournois', command: 'npx tsx ./src/scripts/fix-tournament-banner-urls.ts' },
+        ]
+
+        for (const step of assetSteps) {
+            console.log(`\n${'='.repeat(60)}`)
+            console.log(`📥 Running: ${step.name}`)
+            console.log('='.repeat(60))
+
+            try {
+                const { execSync } = await import('child_process')
+                execSync(step.command, { 
+                    cwd: process.cwd(),
+                    stdio: 'inherit'
+                })
+                console.log(`✅ ${step.name} completed\n`)
+            } catch (error: any) {
+                console.error(`❌ ${step.name} error: ${error.message}\n`)
+            }
+        }
+
+        console.log('='.repeat(60))
+        console.log('✅ All asset downloads and fixes completed')
+        console.log('='.repeat(60))
     } finally {
         await pool.end()
     }
