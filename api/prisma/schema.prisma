@@ -87,7 +87,7 @@ model match {
     pageid             BigInt    @id
     pagename           String?
     namespace          Int?
-    objectname         String?
+    objectname         String?   @unique
     match2id           String?
     match2bracketid    String?
     status             String?
