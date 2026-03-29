@@ -169,8 +169,8 @@ async function main() {
     try {
         const importSteps = [
             { name: 'Équipes', fn: () => importTeams(pool) },
-            { name: 'Joueurs', fn: () => importPlayers(pool) },
             { name: 'Tournois', fn: () => importTournaments(pool) },
+            { name: 'Joueurs', fn: () => importPlayers(pool) },
             { name: 'Matchs', fn: () => importMatches(pool) },
         ]
 
