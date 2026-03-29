@@ -64,6 +64,8 @@ function sleep(ms: number): Promise<void> {
 
 // Fonction exportée pour l'importation des tournois
 export async function importTournaments(pool: Pool): Promise<boolean> {
+    console.log(`\n⏰ [${new Date().toISOString()}] 🚀 DÉBUT importTournaments()`)
+
     const API_KEY_TOURNAMENT: string = settings.API_KEY_TOURNAMENT || settings.API_KEY_TEAM
     const url: string = 'https://api.liquipedia.net/api/v3/tournament'
     const headers: Record<string, string> = {
@@ -255,12 +257,14 @@ export async function importTournaments(pool: Pool): Promise<boolean> {
             console.log('='.repeat(60))
             console.log('✅ MISE À JOUR TERMINÉE')
             console.log('='.repeat(60) + '\n')
+            console.log(`⏰ [${new Date().toISOString()}] ✅ FIN importTournaments() - SUCCÈS\n`);
             return true
         } finally {
             client.release()
         }
     } catch (error: any) {
         console.error(`❌ Erreur globale : ${error.message}`)
+        console.error(`⏰ [${new Date().toISOString()}] ❌ FIN importTournaments() - ÉCHEC\n`);
         return false
     }
 }

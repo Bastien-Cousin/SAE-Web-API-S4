@@ -104,6 +104,8 @@ function sleep(ms: number): Promise<void> {
 
 // Fonction exportée pour l'import des matches (utilisée par le seed)
 export async function importMatches(pool: Pool): Promise<boolean> {
+    console.log(`\n⏰ [${new Date().toISOString()}] 🚀 DÉBUT importMatches()`)
+    
     try {
         console.log('\n' + '='.repeat(60));
         console.log('📥 IMPORT DES MATCHES DEPUIS L\'API LIQUIPEDIA');
@@ -304,12 +306,14 @@ export async function importMatches(pool: Pool): Promise<boolean> {
             console.log('✅ IMPORT TERMINÉ');
             console.log('='.repeat(60) + '\n');
 
+            console.log(`⏰ [${new Date().toISOString()}] ✅ FIN importMatches() - SUCCÈS\n`);
             return true;
         } finally {
             client.release();
         }
     } catch (error: any) {
         console.error(`❌ Erreur: ${error.message}`);
+        console.error(`⏰ [${new Date().toISOString()}] ❌ FIN importMatches() - ÉCHEC\n`);
         return false;
     }
 }

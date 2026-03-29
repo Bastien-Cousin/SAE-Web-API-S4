@@ -12,6 +12,8 @@ function sleep(ms: number): Promise<void> {
 
 // Fonction exportée d'importation des joueurs
 export async function importPlayers(pool: Pool): Promise<boolean> {
+    console.log(`\n⏰ [${new Date().toISOString()}] 🚀 DÉBUT importPlayers()`)
+    
     const API_KEY_PLAYER = settings.API_KEY_PLAYER;
     const url = 'https://api.liquipedia.net/api/v3/player';
     
@@ -200,9 +202,11 @@ export async function importPlayers(pool: Pool): Promise<boolean> {
         }
 
         console.log(`\n💾 ${totalInserted} joueurs insérés`);
+        console.log(`⏰ [${new Date().toISOString()}] ✅ FIN importPlayers() - SUCCÈS\n`);
         return true;
     } catch (e: any) {
         console.error(`❌ Erreur: ${e.message}`);
+        console.error(`⏰ [${new Date().toISOString()}] ❌ FIN importPlayers() - ÉCHEC\n`);
         return false;
     } finally {
         client.release();

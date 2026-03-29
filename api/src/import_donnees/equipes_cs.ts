@@ -42,6 +42,8 @@ function sleep(ms: number): Promise<void> {
 
 // Fonction exportée d'importation des équipes
 export async function importTeams(pool: Pool): Promise<boolean> {
+    console.log(`\n⏰ [${new Date().toISOString()}] 🚀 DÉBUT importTeams()`)
+
     const API_KEY_TEAM: string = settings.API_KEY_TEAM;
     const url: string = 'https://api.liquipedia.net/api/v3/team';
     
@@ -195,12 +197,14 @@ export async function importTeams(pool: Pool): Promise<boolean> {
 
             console.log(`\n💾 ${totalInserted} équipes insérées`);
             console.log(`⏭️ ${totalSkipped} équipes déjà présentes\n`);
+            console.log(`⏰ [${new Date().toISOString()}] ✅ FIN importTeams() - SUCCÈS\n`);
             return true;
         } finally {
             client.release();
         }
     } catch (error: any) {
         console.error(`❌ Erreur: ${error.message}`);
+        console.error(`⏰ [${new Date().toISOString()}] ❌ FIN importTeams() - ÉCHEC\n`);
         return false;
     }
 }
