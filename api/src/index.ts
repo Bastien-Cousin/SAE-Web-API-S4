@@ -11,12 +11,16 @@ import matchesRouter from './routes/matches.js'
 import tournamentsRouter from './routes/tournaments.js'
 import predictionsRouter from './routes/predictions.js'
 import { authRouter } from './auth.route.js'
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Charger la documentation Swagger
 const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
+
+console.log('Chemin swagger.yaml:', path.join(process.cwd(), 'swagger.yaml'));
+console.log('Existe ?', fs.existsSync(path.join(process.cwd(), 'swagger.yaml')));
 
 const app = express()
 app.use(express.json())
