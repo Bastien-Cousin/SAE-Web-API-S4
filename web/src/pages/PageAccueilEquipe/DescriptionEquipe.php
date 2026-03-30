@@ -1,6 +1,4 @@
 <?php
-session_start();
-
 include __DIR__ . '/../../components/ComponentCardPlayer/cardPlayer.php';
 
 $host = getenv('POSTGRES_HOST') ?: 'db';
@@ -27,6 +25,20 @@ $teamData = $stmtTeam->fetch(PDO::FETCH_ASSOC);
 if (!$teamData)
     die("Équipe non trouvée");
 
+$teamExtradata = [];
+if (!empty($teamData['extradata'])) {
+    if (is_array($teamData['extradata'])) {
+        $teamExtradata = $teamData['extradata'];
+    } else {
+        $decodedExtradata = json_decode((string) $teamData['extradata'], true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decodedExtradata)) {
+            $teamExtradata = $decodedExtradata;
+        }
+    }
+}
+
+$ceoName = trim((string) ($teamExtradata['ceo'] ?? ''));
+
 $stmtPlayers = $pdo->prepare("
     SELECT p.*, t.logourl, t.textlesslogourl 
     FROM player p 
@@ -40,21 +52,38 @@ $playersData = $stmtPlayers->fetchAll(PDO::FETCH_ASSOC);
 $equipe = [
     'nom' => $teamData['name'] ?? 'Équipe inconnue',
     'logo' => $teamData['logourl'] ?? $teamData['logo'] ?? '/img/default_logo.png',
-    'ceo' => 'Non disponible',
+    'ceo' => $ceoName !== '' ? $ceoName : 'Non disponible',
     'creation' => $teamData['createdate'] ? date('Y', strtotime($teamData['createdate'])) : 'Non disponible',
     'argent' => number_format($teamData['earnings'] ?? 0) . ' €',
 ];
 
 function getPseudoFromObjectName($objectname)
 {
-    $parts = explode('_player_', $objectname);
-    return $parts[1] ?? $objectname;
+    $objectname = (string) $objectname;
+
+    // Format des joueurs créés manuellement: player_pseudo_1774714877740
+    if (preg_match('/^player_(.+)_\d{10,}$/', $objectname, $matches)) {
+        return $matches[1];
+    }
+
+    if (strpos($objectname, '_') !== false) {
+        $parts = explode('_', $objectname);
+        $lastPart = end($parts);
+        return $lastPart !== false ? (string) $lastPart : $objectname;
+    }
+
+    return $objectname;
 }
 
 $joueursEquipe = array_map(function ($player) {
+    $pseudo = trim((string) ($player['localizedname'] ?? ''));
+    if ($pseudo === '') {
+        $pseudo = getPseudoFromObjectName($player['objectname'] ?? 'N/A');
+    }
+
     return [
         'pays' => $player['nationality'] ?? 'N/A',
-        'pseudo' => getPseudoFromObjectName($player['objectname'] ?? 'N/A'),
+        'pseudo' => $pseudo,
         'nom_prenom' => $player['name'] ?? 'N/A',
         'age' => $player['birthdate'] ? date('Y') - date('Y', strtotime($player['birthdate'])) : 'N/A',
         'statut' => $player['status'] ?? 'Actif',

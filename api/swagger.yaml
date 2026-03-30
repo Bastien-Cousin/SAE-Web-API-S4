@@ -42,7 +42,7 @@ paths:
       description: Vérifie que l'API et la base de données sont opérationnelles
       operationId: getHealth
       responses:
-        '200':
+        "200":
           description: API et base de données en bon état
           content:
             application/json:
@@ -58,7 +58,7 @@ paths:
                   database:
                     type: string
                     example: up
-        '503':
+        "503":
           description: La base de données n'est pas disponible
           content:
             application/json:
@@ -106,7 +106,7 @@ paths:
                   minLength: 1
                   example: SecurePassword123!
       responses:
-        '201':
+        "201":
           description: Utilisateur créé avec succès
           content:
             application/json:
@@ -115,13 +115,13 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: User created successfully
+                    example: Inscription réussie
                   token:
                     type: string
                     example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
                   user:
-                    $ref: '#/components/schemas/UserResponse'
-        '400':
+                    $ref: "#/components/schemas/UserResponse"
+        "400":
           description: Données manquantes ou invalides
           content:
             application/json:
@@ -130,8 +130,8 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: Email, username, and password are required
-        '409':
+                    example: Données manquantes / invalides
+        "409":
           description: L'email est déjà utilisé
           content:
             application/json:
@@ -140,8 +140,8 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: Email already registered
-        '500':
+                    example: Un compte existe déjà avec cet email.
+        "500":
           description: Erreur serveur
           content:
             application/json:
@@ -150,7 +150,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: Internal server error
+                    example: Erreur serveur
 
   /auth/sign-in:
     post:
@@ -177,7 +177,7 @@ paths:
                   type: string
                   example: SecurePassword123!
       responses:
-        '200':
+        "200":
           description: Authentification réussie
           content:
             application/json:
@@ -186,13 +186,13 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Login successful
+                    example: Connexion réussie
                   token:
                     type: string
                     example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
                   user:
-                    $ref: '#/components/schemas/UserResponse'
-        '400':
+                    $ref: "#/components/schemas/UserResponse"
+        "400":
           description: Email ou mot de passe manquant
           content:
             application/json:
@@ -201,8 +201,8 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: Email and password are required
-        '401':
+                    example: Données manquantes / invalides
+        "401":
           description: Identifiants invalides
           content:
             application/json:
@@ -211,8 +211,34 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: Invalid email or password
-        '500':
+                    example: Email ou mot de passe incorrect
+        "500":
+          description: Erreur serveur
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Récupérer l'utilisateur connecté
+      description: Retourne les informations publiques de l'utilisateur à partir du JWT
+      operationId: getMe
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Utilisateur authentifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/UserResponse"
+        "401":
+          description: Token manquant ou invalide
+        "404":
+          description: Utilisateur introuvable
+        "500":
           description: Erreur serveur
 
   /teams:
@@ -237,7 +263,7 @@ paths:
             default: 20
             maximum: 100
       responses:
-        '200':
+        "200":
           description: Liste des équipes récupérée avec succès
           content:
             application/json:
@@ -247,7 +273,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Team'
+                      $ref: "#/components/schemas/Team"
                   pagination:
                     type: object
                     properties:
@@ -257,6 +283,34 @@ paths:
                         type: integer
                       total:
                         type: integer
+
+    post:
+      tags:
+        - Teams
+      summary: Créer une équipe
+      description: Crée une équipe manuellement (authentification requise)
+      operationId: createTeam
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamCreateRequest"
+      responses:
+        "201":
+          description: Équipe créée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "400":
+          description: Données invalides
+        "401":
+          description: Token manquant ou invalide
+        "500":
+          description: Erreur serveur
 
   /teams/{id}:
     get:
@@ -273,13 +327,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Équipe trouvée
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Team'
-        '404':
+                $ref: "#/components/schemas/Team"
+        "404":
           description: Équipe non trouvée
 
   /teams/search:
@@ -287,7 +341,7 @@ paths:
       tags:
         - Teams
       summary: Rechercher des équipes
-      description: Recherche des équipes par nom ou région
+      description: Recherche des équipes par nom ou objectname
       operationId: searchTeams
       parameters:
         - name: q
@@ -296,20 +350,15 @@ paths:
           description: Termes de recherche (nom ou objectname)
           schema:
             type: string
-        - name: region
-          in: query
-          description: Filtrer par région (ex eu, na, kr)
-          schema:
-            type: string
       responses:
-        '200':
+        "200":
           description: Résultats de recherche
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Team'
+                  $ref: "#/components/schemas/Team"
 
   /players:
     get:
@@ -333,7 +382,7 @@ paths:
             default: 20
             maximum: 100
       responses:
-        '200':
+        "200":
           description: Liste des joueurs récupérée avec succès
           content:
             application/json:
@@ -343,7 +392,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Player'
+                      $ref: "#/components/schemas/Player"
                   pagination:
                     type: object
                     properties:
@@ -353,6 +402,36 @@ paths:
                         type: integer
                       total:
                         type: integer
+
+    post:
+      tags:
+        - Players
+      summary: Créer un joueur
+      description: |
+        Crée un joueur manuellement (authentification requise).
+        Champs legacy acceptés: nom_reel, nationalite, team_id, equipe, gains, actif, role_1, role_2.
+      operationId: createPlayer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayerCreateRequest"
+      responses:
+        "201":
+          description: Joueur créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "400":
+          description: Données invalides
+        "401":
+          description: Token manquant ou invalide
+        "500":
+          description: Erreur serveur
 
   /players/{id}:
     get:
@@ -369,13 +448,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Joueur trouvé
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Player'
-        '404':
+                $ref: "#/components/schemas/Player"
+        "404":
           description: Joueur non trouvé
 
   /players/team/{teamId}:
@@ -393,14 +472,14 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Liste des joueurs de l'équipe
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Player'
+                  $ref: "#/components/schemas/Player"
 
   /players/search:
     get:
@@ -422,14 +501,14 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Résultats de recherche
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Player'
+                  $ref: "#/components/schemas/Player"
 
   /matches:
     get:
@@ -453,7 +532,7 @@ paths:
             default: 20
             maximum: 100
       responses:
-        '200':
+        "200":
           description: Liste des matchs récupérée avec succès
           content:
             application/json:
@@ -463,7 +542,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Match'
+                      $ref: "#/components/schemas/Match"
                   pagination:
                     type: object
                     properties:
@@ -473,6 +552,38 @@ paths:
                         type: integer
                       total:
                         type: integer
+
+    post:
+      tags:
+        - Matches
+      summary: Créer un match
+      description: |
+        Crée un match manuellement (authentification requise).
+        Champs compatibles: team1Id/team1_id, team2Id/team2_id, bestOf/bestof,
+        scoreTeam1/score_team1/team1Score, scoreTeam2/score_team2/team2Score,
+        maps (ou match2games/maps_payload).
+      operationId: createMatch
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchCreateRequest"
+      responses:
+        "201":
+          description: Match créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+        "400":
+          description: Données invalides
+        "401":
+          description: Token manquant ou invalide
+        "500":
+          description: Erreur serveur
 
   /matches/{id}:
     get:
@@ -489,13 +600,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Match trouvé
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Match'
-        '404':
+                $ref: "#/components/schemas/Match"
+        "404":
           description: Match non trouvé
 
   /matches/recent:
@@ -513,14 +624,14 @@ paths:
             type: integer
             default: 10
       responses:
-        '200':
+        "200":
           description: Matchs récents
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Match'
+                  $ref: "#/components/schemas/Match"
 
   /matches/team/{teamId}:
     get:
@@ -537,14 +648,14 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Liste des matchs de l'équipe
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Match'
+                  $ref: "#/components/schemas/Match"
 
   /matches/search:
     get:
@@ -561,14 +672,14 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Résultats de recherche
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Match'
+                  $ref: "#/components/schemas/Match"
 
   /tournaments:
     get:
@@ -591,7 +702,7 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: Liste des tournois
           content:
             application/json:
@@ -601,7 +712,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Tournament'
+                      $ref: "#/components/schemas/Tournament"
                   pagination:
                     type: object
                     properties:
@@ -627,14 +738,14 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Résultats de recherche
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Tournament'
+                  $ref: "#/components/schemas/Tournament"
 
   /tournaments/year/{year}:
     get:
@@ -652,14 +763,14 @@ paths:
             type: string
             example: "2024"
       responses:
-        '200':
+        "200":
           description: Tournois de l'année
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Tournament'
+                  $ref: "#/components/schemas/Tournament"
 
   /tournaments/{id}:
     get:
@@ -676,13 +787,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Détails du tournoi
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Tournament'
-        '404':
+                $ref: "#/components/schemas/Tournament"
+        "404":
           description: Tournoi non trouvé
 
   /tournaments/stats/{id}:
@@ -700,13 +811,13 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Statistiques du tournoi
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/Tournament'
+                  - $ref: "#/components/schemas/Tournament"
                   - type: object
                     properties:
                       stats:
@@ -726,6 +837,8 @@ paths:
       summary: Créer une nouvelle prédiction
       description: Crée une prédiction pour un match avec jusqu'à 5 jeux
       operationId: createPrediction
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -783,45 +896,17 @@ paths:
                         nullable: true
                         example: 1
       responses:
-        '201':
+        "201":
           description: Prédiction créée avec succès
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Prediction'
-        '400':
+                $ref: "#/components/schemas/Prediction"
+        "400":
           description: Données invalides ou manquantes
-        '409':
+        "409":
           description: Prédiction déjà existante pour ce match
-        '500':
-          description: Erreur serveur
-
-    get:
-      tags:
-        - Predictions
-      summary: Récupérer les prédictions avec pagination
-      operationId: getPredictions
-      parameters:
-        - name: skip
-          in: query
-          schema:
-            type: integer
-            default: 0
-        - name: take
-          in: query
-          schema:
-            type: integer
-            default: 20
-      responses:
-        '200':
-          description: Liste des prédictions
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Prediction'
-        '500':
+        "500":
           description: Erreur serveur
 
   /predictions/{id}:
@@ -830,6 +915,8 @@ paths:
         - Predictions
       summary: Récupérer une prédiction par ID
       operationId: getPredictionById
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -837,17 +924,17 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: Prédiction trouvée
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Prediction'
-        '400':
+                $ref: "#/components/schemas/Prediction"
+        "400":
           description: ID invalide
-        '404':
+        "404":
           description: Prédiction non trouvée
-        '500':
+        "500":
           description: Erreur serveur
 
     patch:
@@ -855,6 +942,8 @@ paths:
         - Predictions
       summary: Mettre à jour une prédiction
       operationId: updatePrediction
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -896,17 +985,17 @@ paths:
                         type: integer
                         nullable: true
       responses:
-        '200':
+        "200":
           description: Prédiction mise à jour
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Prediction'
-        '400':
+                $ref: "#/components/schemas/Prediction"
+        "400":
           description: ID invalide
-        '404':
+        "404":
           description: Prédiction non trouvée
-        '500':
+        "500":
           description: Erreur serveur
 
     delete:
@@ -914,6 +1003,8 @@ paths:
         - Predictions
       summary: Supprimer une prédiction
       operationId: deletePrediction
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -921,13 +1012,13 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: Prédiction supprimée
-        '400':
+        "400":
           description: ID invalide
-        '404':
+        "404":
           description: Prédiction non trouvée
-        '500':
+        "500":
           description: Erreur serveur
 
   /predictions/user/{userId}:
@@ -936,6 +1027,8 @@ paths:
         - Predictions
       summary: Récupérer les prédictions d'un utilisateur
       operationId: getPredictionsByUser
+      security:
+        - BearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -943,17 +1036,17 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: Liste des prédictions de l'utilisateur
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Prediction'
-        '400':
+                  $ref: "#/components/schemas/Prediction"
+        "400":
           description: ID utilisateur invalide
-        '500':
+        "500":
           description: Erreur serveur
 
   /predictions/match/{matchId}:
@@ -962,6 +1055,8 @@ paths:
         - Predictions
       summary: Récupérer les prédictions pour un match
       operationId: getPredictionsByMatch
+      security:
+        - BearerAuth: []
       parameters:
         - name: matchId
           in: path
@@ -970,17 +1065,17 @@ paths:
             type: string
             format: bigint
       responses:
-        '200':
+        "200":
           description: Liste des prédictions pour le match
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Prediction'
-        '400':
+                  $ref: "#/components/schemas/Prediction"
+        "400":
           description: ID match invalide
-        '500':
+        "500":
           description: Erreur serveur
 
 components:
@@ -1228,6 +1323,198 @@ components:
           format: email
           example: john.doe@example.com
 
+    TeamCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Team Example
+        region:
+          type: string
+          nullable: true
+          example: eu
+        logoUrl:
+          type: string
+          format: uri
+          nullable: true
+        ceo:
+          type: string
+          nullable: true
+          example: Jane Doe
+        createdate:
+          type: string
+          format: date
+          nullable: true
+        earnings:
+          type: integer
+          minimum: 0
+          nullable: true
+
+    PlayerCreateRequest:
+      type: object
+      required:
+        - pseudo
+      properties:
+        pseudo:
+          type: string
+          example: baltrix
+        name:
+          type: string
+          nullable: true
+          description: "Nom réel (alias possible: nom_reel)"
+        nom_reel:
+          type: string
+          nullable: true
+        nationality:
+          type: string
+          nullable: true
+          description: "Nationalité ISO-2 (alias possible: nationalite)"
+        nationalite:
+          type: string
+          nullable: true
+        region:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+          description: "Alias possible: actif"
+        actif:
+          type: string
+          nullable: true
+        teamId:
+          type: string
+          nullable: true
+          description: "Alias possibles: team_id"
+        team_id:
+          type: string
+          nullable: true
+        teamName:
+          type: string
+          nullable: true
+          description: "Alias possible: equipe"
+        equipe:
+          type: string
+          nullable: true
+        earnings:
+          type: integer
+          nullable: true
+          description: "Alias possible: gains"
+        gains:
+          type: integer
+          nullable: true
+        age:
+          type: integer
+          nullable: true
+        roles:
+          type: array
+          items:
+            type: string
+          maxItems: 2
+        role_1:
+          type: string
+          nullable: true
+        role_2:
+          type: string
+          nullable: true
+
+    MatchCreateRequest:
+      type: object
+      required:
+        - team1Id
+        - team2Id
+      properties:
+        team1Id:
+          type: string
+          description: "Alias possible: team1_id"
+        team1_id:
+          type: string
+        team2Id:
+          type: string
+          description: "Alias possible: team2_id"
+        team2_id:
+          type: string
+        tournament:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Alias possible: date_match"
+        date_match:
+          type: string
+          format: date-time
+          nullable: true
+        bestOf:
+          type: integer
+          enum: [1, 3, 5]
+          nullable: true
+        bestof:
+          type: integer
+          enum: [1, 3, 5]
+          nullable: true
+        scoreTeam1:
+          type: integer
+          nullable: true
+        score_team1:
+          type: integer
+          nullable: true
+        team1Score:
+          type: integer
+          nullable: true
+        scoreTeam2:
+          type: integer
+          nullable: true
+        score_team2:
+          type: integer
+          nullable: true
+        team2Score:
+          type: integer
+          nullable: true
+        maps:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchCreateMap"
+
+    MatchCreateMap:
+      type: object
+      properties:
+        map:
+          type: string
+          nullable: true
+          description: "Alias possibles: name, mapName"
+        name:
+          type: string
+          nullable: true
+        mapName:
+          type: string
+          nullable: true
+        score:
+          type: string
+          nullable: true
+          example: 13-10
+        team1_score:
+          type: integer
+          nullable: true
+        team1Score:
+          type: integer
+          nullable: true
+        score_team1:
+          type: integer
+          nullable: true
+        team2_score:
+          type: integer
+          nullable: true
+        team2Score:
+          type: integer
+          nullable: true
+        score_team2:
+          type: integer
+          nullable: true
+
     Prediction:
       type: object
       properties:
@@ -1280,7 +1567,7 @@ components:
         prediction_games:
           type: array
           items:
-            $ref: '#/components/schemas/PredictionGame'
+            $ref: "#/components/schemas/PredictionGame"
 
     PredictionGame:
       type: object
@@ -1328,5 +1615,4 @@ components:
       bearerFormat: JWT
       description: Authentification JWT. Obtenu via /auth/sign-up ou /auth/sign-in
 
-security:
-  - BearerAuth: []
+security: []

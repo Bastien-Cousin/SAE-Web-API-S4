@@ -1,4 +1,4 @@
-<?php 
+<?php
 include __DIR__ . '/../../components/ComponentCardPlayer/cardPlayer.php';
 
 $host = getenv('POSTGRES_HOST') ?: 'db';
@@ -13,10 +13,10 @@ $search = $_GET['search'] ?? '';
 $region = $_GET['region'] ?? '';
 
 $limit = 50;
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 
-$sql = "SELECT p.pageid, p.objectname, p.name, p.birthdate, p.status, p.type, p.earnings, p.nationality, p.region, p.teampagename, t.logourl, t.textlesslogourl
+$sql = "SELECT p.pageid, p.objectname, p.localizedname, p.name, p.birthdate, p.status, p.type, p.earnings, p.nationality, p.region, p.teampagename, t.logourl, t.textlesslogourl
         FROM player p
         LEFT JOIN team t ON LOWER(REPLACE(REPLACE(p.teampagename, '_', ' '), '-', '')) = LOWER(REPLACE(REPLACE(SUBSTRING(t.objectname FROM POSITION('_team_' IN t.objectname) + 6), '_', ' '), '-', ''))
         WHERE 1=1";
@@ -24,7 +24,7 @@ $sql = "SELECT p.pageid, p.objectname, p.name, p.birthdate, p.status, p.type, p.
 $params = [];
 
 if ($search !== '') {
-    $sql .= " AND (p.name ILIKE :search OR p.objectname ILIKE :search)";
+    $sql .= " AND (p.name ILIKE :search OR p.objectname ILIKE :search OR p.localizedname ILIKE :search)";
     $params[':search'] = "%$search%";
 }
 
@@ -50,11 +50,23 @@ $playersData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 foreach ($playersData as $player) {
 
-    $pseudo = $player['objectname'] ?? 'N/A';
+    $pseudo = trim((string) ($player['localizedname'] ?? ''));
 
-    if (strpos($pseudo, '_') !== false) {
-        $parts = explode('_', $pseudo);
-        $pseudo = end($parts);
+    if ($pseudo === '') {
+        $objectname = (string) ($player['objectname'] ?? '');
+
+        if (preg_match('/^player_(.+)_\d{10,}$/', $objectname, $matches)) {
+            $pseudo = $matches[1];
+        } elseif (strpos($objectname, '_') !== false) {
+            $parts = explode('_', $objectname);
+            $pseudo = (string) end($parts);
+        } else {
+            $pseudo = $objectname;
+        }
+    }
+
+    if ($pseudo === '') {
+        $pseudo = 'N/A';
     }
 
     $joueur = [

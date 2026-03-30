@@ -1,6 +1,4 @@
 <?php
-session_start();
-
 include __DIR__ . '/../../components/ComponentCardPlayer/cardPlayer.php';
 
 $host = getenv('POSTGRES_HOST') ?: 'db';
@@ -27,7 +25,7 @@ $offset = ($page - 1) * $limit;
 $stmtRegions = $pdo->query("SELECT DISTINCT region FROM player ORDER BY region ASC");
 $regions = $stmtRegions->fetchAll(PDO::FETCH_COLUMN);
 
-$sql = "SELECT p.pageid, p.objectname, p.name, p.birthdate, p.status, p.type, p.earnings, p.nationality, p.region, p.teampagename, t.logourl, t.textlesslogourl
+$sql = "SELECT p.pageid, p.objectname, p.localizedname, p.name, p.birthdate, p.status, p.type, p.earnings, p.nationality, p.region, p.teampagename, t.logourl, t.textlesslogourl
         FROM player p
         LEFT JOIN team t ON LOWER(REPLACE(REPLACE(p.teampagename, '_', ' '), '-', '')) = LOWER(REPLACE(REPLACE(SUBSTRING(t.objectname FROM POSITION('_team_' IN t.objectname) + 6), '_', ' '), '-', ''))
         WHERE 1=1";
@@ -35,7 +33,7 @@ $sql = "SELECT p.pageid, p.objectname, p.name, p.birthdate, p.status, p.type, p.
 $params = [];
 
 if ($search !== '') {
-    $sql .= " AND (p.name ILIKE :search OR p.objectname ILIKE :search)";
+    $sql .= " AND (p.name ILIKE :search OR p.objectname ILIKE :search OR p.localizedname ILIKE :search)";
     $params[':search'] = "%$search%";
 }
 
@@ -61,14 +59,23 @@ $playersData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Ajouter pseudo nettoyé
 foreach ($playersData as &$player) {
-    $pseudo = $player['objectname'] ?? 'N/A';
+    $pseudo = trim((string) ($player['localizedname'] ?? ''));
 
-    if (strpos($pseudo, '_') !== false) {
-        $parts = explode('_', $pseudo);
-        $player['pseudo'] = end($parts);
-    } else {
-        $player['pseudo'] = $pseudo;
+    if ($pseudo === '') {
+        $objectname = (string) ($player['objectname'] ?? '');
+
+        // Ex: player_test123_1774711339188 -> test123
+        if (preg_match('/^player_(.+)_\d{10,}$/', $objectname, $matches)) {
+            $pseudo = $matches[1];
+        } elseif (strpos($objectname, '_') !== false) {
+            $parts = explode('_', $objectname);
+            $pseudo = (string) end($parts);
+        } else {
+            $pseudo = $objectname;
+        }
     }
+
+    $player['pseudo'] = $pseudo !== '' ? $pseudo : 'N/A';
 }
 unset($player); // bonne pratique
 
@@ -122,6 +129,10 @@ $joueurs = array_map(function ($player) {
 <body>
 
     <?php include __DIR__ . '/../../components/ComponentNavbar/navbar.php'; ?>
+
+    <?php if (isset($_GET['created']) && $_GET['created'] === '1'): ?>
+        <p style="text-align:center;color:#2f7f34;font-weight:600;">Joueur créé avec succès.</p>
+    <?php endif; ?>
 
     <div class="page-header">
         <div class="header-section">

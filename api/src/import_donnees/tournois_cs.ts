@@ -1,48 +1,7 @@
 import { Pool, type PoolClient } from 'pg'
 import axios, { AxiosError } from 'axios'
-import * as dotenv from 'dotenv'
-import * as path from 'path'
-import { fileURLToPath } from 'url'
 import settings from './settings.js'
-
-// Créer __dirname en ESM
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-// Charger les variables d'environnement
-dotenv.config({ path: path.join(__dirname, '.env') })
-
-const API_KEY_TOURNAMENT: string = settings.API_KEY_TOURNAMENT || settings.API_KEY_TEAM
-const DB_PASSWORD: string = settings.POSTGRES_PASSWORD
-const dbname: string = settings.POSTGRES_DB
-const user: string = settings.POSTGRES_USER
-const host: string = settings.POSTGRES_HOST
-const port: number = parseInt(String(settings.POSTGRES_PORT))
-
-console.log('🚀 Démarrage du script importation tournois Counter-Strike...')
-console.log(`⏰ Heure actuelle : ${new Date().toLocaleString()}`)
-
-// URL de l'API Liquipedia pour les tournois
-const url: string = 'https://api.liquipedia.net/api/v3/tournament'
-
-// En-têtes pour la requête API
-const headers: Record<string, string> = {
-    Authorization: `Apikey ${API_KEY_TOURNAMENT}`,
-    Accept: 'application/json',
-    'User-Agent': 'CounterStrikeUniversityProject/1.0 (Counter Strike stats; pierredeldalle.pro@gmail.com)',
-}
-
-// Configuration PostgreSQL
-const pool = new Pool({
-    database: dbname,
-    user: user,
-    password: DB_PASSWORD,
-    host: host,
-    port: port,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-})
+import { fileURLToPath } from 'url'
 
 // Interface pour les données de tournoi
 interface tournament {
@@ -103,8 +62,17 @@ function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-// Fonction pour mettre à jour les tournois
-async function updateTournaments(): Promise<void> {
+// Fonction exportée pour l'importation des tournois
+export async function importTournaments(pool: Pool): Promise<boolean> {
+    console.log(`\n⏰ [${new Date().toISOString()}] 🚀 DÉBUT importTournaments()`)
+
+    const API_KEY_TOURNAMENT: string = settings.API_KEY_TOURNAMENT || settings.API_KEY_TEAM
+    const url: string = 'https://api.liquipedia.net/api/v3/tournament'
+    const headers: Record<string, string> = {
+        Authorization: `Apikey ${API_KEY_TOURNAMENT}`,
+        Accept: 'application/json',
+        'User-Agent': 'CounterStrikeUniversityProject/1.0 (Counter Strike stats; pierredeldalle.pro@gmail.com)',
+    }
     console.log('\n' + '='.repeat(60))
     console.log('🔄 DÉBUT DE LA MISE À JOUR DES TOURNOIS')
     console.log(`⏰ ${new Date().toLocaleString()}`)
@@ -156,8 +124,8 @@ async function updateTournaments(): Promise<void> {
                 }
             } catch (error: any) {
                 if (error.response?.status === 429) {
-                    console.log('   ⏱️ Rate limit détecté (429) - attente 60s...')
-                    await sleep(60000)
+                    console.log('   ⏱️ Rate limit détecté (429) - attente 2h...')
+                    await sleep(7200000)
                     continue
                 } else {
                     console.error(`   ❌ Erreur requête : ${error.message}`)
@@ -289,43 +257,63 @@ async function updateTournaments(): Promise<void> {
             console.log('='.repeat(60))
             console.log('✅ MISE À JOUR TERMINÉE')
             console.log('='.repeat(60) + '\n')
+            console.log(`⏰ [${new Date().toISOString()}] ✅ FIN importTournaments() - SUCCÈS\n`);
+            return true
         } finally {
             client.release()
         }
     } catch (error: any) {
         console.error(`❌ Erreur globale : ${error.message}`)
+        console.error(`⏰ [${new Date().toISOString()}] ❌ FIN importTournaments() - ÉCHEC\n`);
+        return false
     }
 }
 
-// Fonction principale pour exécuter la mise à jour une seule fois
+// CLI Entry point
 async function main(): Promise<void> {
+    const API_KEY_TOURNAMENT: string = settings.API_KEY_TOURNAMENT || settings.API_KEY_TEAM
+    const DB_PASSWORD: string = settings.POSTGRES_PASSWORD
+    const dbname: string = settings.POSTGRES_DB
+    const user: string = settings.POSTGRES_USER
+    const host: string = settings.POSTGRES_HOST
+    const port: number = parseInt(String(settings.POSTGRES_PORT))
+
+    const pool = new Pool({
+        database: dbname,
+        user: user,
+        password: DB_PASSWORD,
+        host: host,
+        port: port,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+    })
+
     try {
-        await updateTournaments()
+        console.log('🚀 Démarrage du script importation tournois Counter-Strike...')
+        console.log(`⏰ Heure actuelle : ${new Date().toLocaleString()}`)
+        const success = await importTournaments(pool)
+        process.exit(success ? 0 : 1)
+    } finally {
         await pool.end()
-        process.exit(0)
-    } catch (error: any) {
-        console.error(`   ❌ Erreur lors de l'exécution: ${error.message}`)
-        await pool.end()
-        process.exit(1)
     }
 }
 
 // Gestion Ctrl+C
 process.on('SIGINT', async () => {
     console.log('\n🛑 Arrêt du service...')
-    await pool.end()
     process.exit(0)
 })
 
 process.on('SIGTERM', async () => {
     console.log('\n🛑 Arrêt du service...')
-    await pool.end()
     process.exit(0)
 })
 
-// Démarrage
-main().catch(async (error: any) => {
-    console.error(`❌ Erreur non gérée : ${error.message}`)
-    await pool.end()
-    process.exit(1)
-})
+// CLI execution
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch((error: any) => {
+        console.error(`❌ Erreur non gérée : ${error.message}`)
+        process.exit(1)
+    })
+}

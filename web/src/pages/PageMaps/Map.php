@@ -1,6 +1,4 @@
 <?php
-session_start();
-
 require_once '../../components/ComponentCardMaps/cardMaps.php';
 
 function getMapCounts($pdo)

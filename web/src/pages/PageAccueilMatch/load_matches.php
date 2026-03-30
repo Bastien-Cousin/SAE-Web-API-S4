@@ -12,7 +12,8 @@ $pdo = new PDO(
 
 function decodeJson($data)
 {
-    if (is_array($data)) return $data;
+    if (is_array($data))
+        return $data;
     $decoded = json_decode($data, true);
     return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
 }
@@ -41,12 +42,14 @@ function extractTeams($match)
 {
     $team1 = $match['team1_name'] ?? '';
     $team2 = $match['team2_name'] ?? '';
-    if ($team1 && $team2) return [$team1, $team2];
+    if ($team1 && $team2)
+        return [$team1, $team2];
 
     $opponents = decodeJson($match['match2opponents'] ?? '');
     $names = [];
     foreach ($opponents as $opp) {
-        if (!empty($opp['name'])) $names[] = $opp['name'];
+        if (!empty($opp['name']))
+            $names[] = $opp['name'];
     }
     return [
         $team1 ?: ($names[0] ?? 'Team 1'),
@@ -56,35 +59,47 @@ function extractTeams($match)
 
 function computeScore($match)
 {
+    $opponents = decodeJson($match['match2opponents'] ?? '');
+    if (count($opponents) >= 2 && isset($opponents[0]['score']) && isset($opponents[1]['score'])) {
+        return intval($opponents[0]['score']) . '-' . intval($opponents[1]['score']);
+    }
+
     $games = decodeJson($match['match2games'] ?? '');
     $t1 = 0;
     $t2 = 0;
 
     foreach ($games as $map) {
-        if (($map['status'] ?? '') === 'notplayed') continue;
-        if (isset($map['score']) && preg_match('/(\d+)-(\d+)/', $map['score'], $m)) {
-            if ($m[1] > $m[2]) $t1++;
-            elseif ($m[2] > $m[1]) $t2++;
-        }
-    }
+        if (($map['status'] ?? '') === 'notplayed')
+            continue;
+        $s1 = null;
+        $s2 = null;
 
-    if ($t1 === 0 && $t2 === 0) {
-        $opponents = decodeJson($match['match2opponents'] ?? '');
-        if (count($opponents) >= 2) {
-            return ($opponents[0]['score'] ?? 0) . '-' . ($opponents[1]['score'] ?? 0);
+        if (isset($map['score']) && preg_match('/(\d+)-(\d+)/', (string) $map['score'], $m)) {
+            $s1 = intval($m[1]);
+            $s2 = intval($m[2]);
+        } elseif (isset($map['team1_score']) && isset($map['team2_score'])) {
+            $s1 = intval($map['team1_score']);
+            $s2 = intval($map['team2_score']);
+        }
+
+        if ($s1 !== null && $s2 !== null) {
+            if ($s1 > $s2)
+                $t1++;
+            elseif ($s2 > $s1)
+                $t2++;
         }
     }
 
     return "$t1-$t2";
 }
 
-$search      = $_GET['search'] ?? '';
-$mapsFilter  = $_GET['maps']   ?? '';
-$scoreFilter = $_GET['score']  ?? '';
-$dateFilter  = $_GET['date']   ?? '';
+$search = $_GET['search'] ?? '';
+$mapsFilter = $_GET['maps'] ?? '';
+$scoreFilter = $_GET['score'] ?? '';
+$dateFilter = $_GET['date'] ?? '';
 
-$limit  = 30;
-$page   = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit = 30;
+$page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 
 $sql = "
@@ -95,6 +110,7 @@ $sql = "
     LEFT JOIN team t1 ON m.team1_id = t1.pageid
     LEFT JOIN team t2 ON m.team2_id = t2.pageid
     WHERE 1=1
+    AND COALESCE(m.status, '') <> 'prediction_only'
 ";
 
 $params = [];
@@ -135,7 +151,7 @@ $stmt = $pdo->prepare($sql);
 foreach ($params as $key => $value) {
     $stmt->bindValue($key, $value);
 }
-$stmt->bindValue(':limit',  $limit,  PDO::PARAM_INT);
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -148,11 +164,11 @@ if ($scoreFilter !== '') {
 
 foreach ($matches as $match) {
     list($team1, $team2) = extractTeams($match);
-    $score     = computeScore($match);
+    $score = computeScore($match);
     $team1Logo = safeLogo(getTeamLogoByName($pdo, $team1));
     $team2Logo = safeLogo(getTeamLogoByName($pdo, $team2));
-    $date      = !empty($match['date']) ? date('Y-m-d', strtotime($match['date'])) : 'N/A';
-    $link      = "/pages/PageAccueilMatch/DescriptionMatch.php?id=" . urlencode($match['pageid']);
+    $date = !empty($match['date']) ? date('Y-m-d', strtotime($match['date'])) : 'N/A';
+    $link = "/pages/PageAccueilMatch/DescriptionMatch.php?id=" . urlencode($match['pageid']);
 
     renderMatchBar($team1Logo, $team1, $score, $team2, $team2Logo, $date, $link);
 }

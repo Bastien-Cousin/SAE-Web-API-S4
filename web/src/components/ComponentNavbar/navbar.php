@@ -1,3 +1,29 @@
+<?php
+
+$user = null;
+
+if (isset($_COOKIE['auth_token'])) {
+
+    $token = $_COOKIE['auth_token'];
+
+    $options = [
+        "http" => [
+            "header" => "Authorization: Bearer $token"
+        ]
+    ];
+
+    $context = stream_context_create($options);
+
+    $result = @file_get_contents("http://api:3070/api/auth/me", false, $context);
+
+    if ($result !== false) {
+        $data = json_decode($result, true);
+        if (isset($data["user"])) {
+            $user = $data["user"];
+        }
+    }
+}
+?>
 <nav class="navbar">
     <div class="logo_area"><img src='https://i.postimg.cc/FK3c9qmv/Gemini-Generated-Image-ip05muip05muip05-removebg-preview.png' alt='Logo du site'></div>
     <div class="nav_buttons">
@@ -38,13 +64,13 @@
             </li>
         </ul>
     </div>
-    <?php if (isset($_SESSION['user'])): ?>
+    <?php if ($user): ?>
         <div class="connected">
-            <span>Bonjour, <?= htmlspecialchars($_SESSION["user"]["username"]) ?></span>
-            <a href="components/ComponentNavbar/logout.php">
+            <span>Bonjour, <?= htmlspecialchars($user["username"]) ?></span>
+            <a href="/components/ComponentNavbar/logout.php">
                 <button>Se déconnecter</button>
             </a>
-         </div>
+        </div>
     <?php else: ?>
         <div class="auth_logo">
             <a href="/pages/PageConnexionInscription/Connexion.php">

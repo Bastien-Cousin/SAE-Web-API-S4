@@ -1,48 +1,7 @@
 import { Pool, type PoolClient } from 'pg';
-import axios, { AxiosError } from 'axios';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import axios from 'axios';
 import settings from './settings.js';
-
-// Créer __dirname en ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Charger les variables d'environnement
-dotenv.config({ path: path.join(__dirname, '.env') });
-
-const API_KEY_TEAM: string = settings.API_KEY_TEAM;
-const DB_PASSWORD: string = (settings.POSTGRES_PASSWORD);
-const dbname: string = (settings.POSTGRES_DB);
-const user: string = (settings.POSTGRES_USER);
-const host: string = (settings.POSTGRES_HOST);
-const port: number = parseInt(String(settings.POSTGRES_PORT));
-
-console.log('🚀 Démarrage du script importation équipes Counter-Strike...');
-console.log(`⏰ Heure actuelle : ${new Date().toLocaleString()}`);
-
-// URL de l'API Liquipedia
-const url: string = 'https://api.liquipedia.net/api/v3/team';
-
-// En-têtes pour la requête API
-const headers: Record<string, string> = {
-    Authorization: `Apikey ${settings.API_KEY_TEAM}`,
-    Accept: 'application/json',
-    'User-Agent': 'CounterStrikeUniversityProject/1.0 (Counter Strike stats; pierredeldalle.pro@gmail.com)'
-};
-
-// Configuration PostgreSQL
-const pool = new Pool({
-    database: dbname,
-    user: user,
-    password: DB_PASSWORD,
-    host: host,
-    port: port,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000
-});
+import { fileURLToPath } from 'url';
 
 // Interface pour les données d'équipe
 interface team {
@@ -81,12 +40,18 @@ function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Fonction pour mettre à jour les équipes
-async function updateTeams(): Promise<void> {
-    console.log('\n' + '='.repeat(60));
-    console.log('🔄 DÉBUT DE LA MISE À JOUR DES ÉQUIPES');
-    console.log(`⏰ ${new Date().toLocaleString()}`);
-    console.log('='.repeat(60));
+// Fonction exportée d'importation des équipes
+export async function importTeams(pool: Pool): Promise<boolean> {
+    console.log(`\n⏰ [${new Date().toISOString()}] 🚀 DÉBUT importTeams()`)
+
+    const API_KEY_TEAM: string = settings.API_KEY_TEAM;
+    const url: string = 'https://api.liquipedia.net/api/v3/team';
+    
+    const headers: Record<string, string> = {
+        Authorization: `Apikey ${API_KEY_TEAM}`,
+        Accept: 'application/json',
+        'User-Agent': 'CounterStrikeUniversityProject/1.0 (Counter Strike stats; pierredeldalle.pro@gmail.com)'
+    };
 
     const teamsData: team[] = [];
     const params: PaginationParams = {
@@ -133,8 +98,8 @@ async function updateTeams(): Promise<void> {
                 }
             } catch (error: any) {
                 if (error.response?.status === 429) {
-                    console.log('   ⏱️ Rate limit détecté (429) - attente 60s...');
-                    await sleep(60000);
+                    console.log('   ⏱️ Rate limit détecté (429) - attente 2h...');
+                    await sleep(7200000);
                     continue;
                 } else {
                     console.error(`   ❌ Erreur requête : ${error.message}`);
@@ -149,8 +114,7 @@ async function updateTeams(): Promise<void> {
         const client: PoolClient = await pool.connect();
 
         try {
-            console.log('\n🔌 Connexion à la base de données...');
-            console.log('✅ Connecté à PostgreSQL\n');
+            console.log('\n🔌 Insertion des équipes...\n');
 
             let totalInserted: number = 0;
             let totalSkipped: number = 0;
@@ -231,49 +195,73 @@ async function updateTeams(): Promise<void> {
                 }
             }
 
-            console.log(`\n💾 ${totalInserted} équipes insérées avec succès !`);
+            console.log(`\n💾 ${totalInserted} équipes insérées`);
             console.log(`⏭️ ${totalSkipped} équipes déjà présentes\n`);
-
-            console.log('='.repeat(60));
-            console.log('✅ MISE À JOUR TERMINÉE');
-            console.log('='.repeat(60) + '\n');
+            console.log(`⏰ [${new Date().toISOString()}] ✅ FIN importTeams() - SUCCÈS\n`);
+            return true;
         } finally {
             client.release();
         }
     } catch (error: any) {
-        console.error(`❌ Erreur globale : ${error.message}`);
+        console.error(`❌ Erreur: ${error.message}`);
+        console.error(`⏰ [${new Date().toISOString()}] ❌ FIN importTeams() - ÉCHEC\n`);
+        return false;
     }
 }
 
-// Fonction principale pour exécuter la mise à jour une seule fois
+// Fonction principale pour exécuter via CLI
 async function main(): Promise<void> {
+    const DB_PASSWORD: string = settings.POSTGRES_PASSWORD;
+    const dbname: string = settings.POSTGRES_DB;
+    const user: string = settings.POSTGRES_USER;
+    const host: string = settings.POSTGRES_HOST;
+    const port: number = parseInt(String(settings.POSTGRES_PORT));
+
+    const pool = new Pool({
+        database: dbname,
+        user: user,
+        password: DB_PASSWORD,
+        host: host,
+        port: port,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000
+    });
+
     try {
-        await updateTeams();
-        await pool.end();
-        process.exit(0);
+        console.log('🚀 Démarrage du script importation équipes Counter-Strike...');
+        console.log(`⏰ Heure actuelle : ${new Date().toLocaleString()}\n`);
+        const ok = await importTeams(pool);
+        if (ok) {
+            console.log('✅ Import réussi');
+            process.exit(0);
+        } else {
+            console.error('❌ Import échoué');
+            process.exit(1);
+        }
     } catch (error: any) {
-        console.error(`   ❌ Erreur lors de l'exécution: ${error.message}`);
-        await pool.end();
+        console.error(`❌ Erreur: ${error.message}`);
         process.exit(1);
+    } finally {
+        await pool.end();
     }
 }
 
 // Gestion Ctrl+C
 process.on('SIGINT', async () => {
-    console.log('\n🛑 Arrêt du service...');
-    await pool.end();
+    console.log('\n🛑 Arrêt...');
     process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-    console.log('\n🛑 Arrêt du service...');
-    await pool.end();
+    console.log('\n🛑 Arrêt...');
     process.exit(0);
 });
 
-// Démarrage
-main().catch(async (error: any) => {
-    console.error(`❌ Erreur non gérée : ${error.message}`);
-    await pool.end();
-    process.exit(1);
-});
+// Démarrage en CLI
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch(async (error: any) => {
+        console.error(`❌ Erreur fatale: ${error.message}`);
+        process.exit(1);
+    });
+}

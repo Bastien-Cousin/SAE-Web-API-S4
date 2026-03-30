@@ -2,73 +2,28 @@ import { Pool } from 'pg';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
-
-// Import des variables d'environnement
-import * as dotenv from 'dotenv';
+import settings from './settings.js';
 import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
-
-const API_KEY_PLAYER = process.env.LIQUIPEDIA_API_KEY_PLAYER;
-const DB_PASSWORD = process.env.POSTGRES_PASSWORD;
-const dbname = process.env.POSTGRES_DB;
-const user = process.env.POSTGRES_USER;
-const host = process.env.POSTGRES_HOST;
-const port = parseInt(process.env.POSTGRES_PORT || '5432');
-
-console.log("🚀 Démarrage du script importation joueurs Counter-Strike...");
-console.log(`⏰ Heure actuelle : ${new Date().toLocaleString()}`);
-
-// Vérification des variables d'environnement
-try {
-    if (!API_KEY_PLAYER || !DB_PASSWORD || !dbname || !user || !host) {
-        throw new Error("Variables d'environnement manquantes");
-    }
-    console.log(`✅ Variables d'environnement chargées`);
-    console.log(`   - API_KEY: ***${API_KEY_PLAYER.slice(-10)}`);
-    console.log(`   - Base: ${dbname}`);
-    console.log(`   - Host: ${host}:${port}`);
-} catch (e) {
-    console.error(`❌ Erreur lors du chargement des variables : ${e}`);
-    process.exit(1);
-}
-
-// URL de l'API Liquipedia
-const url = "https://api.liquipedia.net/api/v3/player";
-console.log(`📡 URL API : ${url}`);
-
-// En-têtes pour la requête API
-const headers = {
-    "Authorization": `Apikey ${API_KEY_PLAYER}`,
-    "Accept": "application/json",
-    "User-Agent": "CounterStrikeUniversityProject/1.0 (Counter Strike stats; pierredeldalle.pro@gmail.com)"
-};
-
-// Pool de connexion PostgreSQL
-const pool = new Pool({
-    database: dbname,
-    user: user,
-    password: DB_PASSWORD,
-    host: host,
-    port: port,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-});
 
 // Fonction pour ajouter un délai
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Fonction pour mettre à jour la table des joueurs
-async function updatePlayers(): Promise<boolean> {
-    console.log("\n" + "=".repeat(60));
-    console.log("🔄 DÉBUT DE LA MISE À JOUR DES JOUEURS");
-    console.log(`⏰ ${new Date().toLocaleString()}`);
-    console.log("=".repeat(60));
+// Fonction exportée d'importation des joueurs
+export async function importPlayers(pool: Pool): Promise<boolean> {
+    console.log(`\n⏰ [${new Date().toISOString()}] 🚀 DÉBUT importPlayers()`)
+    
+    const API_KEY_PLAYER = settings.API_KEY_PLAYER;
+    const url = 'https://api.liquipedia.net/api/v3/player';
+    
+    const headers = {
+        'Authorization': `Apikey ${API_KEY_PLAYER}`,
+        'Accept': 'application/json',
+        'User-Agent': 'CounterStrikeUniversityProject/1.0 (Counter Strike stats; pierredeldalle.pro@gmail.com)'
+    };
+
+    console.log('📥 Importation des joueurs...');
 
     interface player {
         [key: string]: any;
@@ -127,8 +82,8 @@ async function updatePlayers(): Promise<boolean> {
             }
         } catch (error: any) {
             if (error.response?.status === 429) {
-                console.warn(`   ⚠️ Rate limit détecté (429) - attente 60s...`);
-                await sleep(60000);
+                console.warn(`   ⚠️ Rate limit détecté (429) - attente 2h...`);
+                await sleep(7200000);
                 continue;
             }
             console.error(`   ❌ Erreur requête : ${error.message}`);
@@ -246,54 +201,71 @@ async function updatePlayers(): Promise<boolean> {
             }
         }
 
-        console.log(`\n💾 ${totalInserted} joueurs insérés avec succès !`);
+        console.log(`\n💾 ${totalInserted} joueurs insérés`);
+        console.log(`⏰ [${new Date().toISOString()}] ✅ FIN importPlayers() - SUCCÈS\n`);
         return true;
     } catch (e: any) {
-        console.error(`❌ Erreur connexion BDD: ${e.message}`);
+        console.error(`❌ Erreur: ${e.message}`);
+        console.error(`⏰ [${new Date().toISOString()}] ❌ FIN importPlayers() - ÉCHEC\n`);
         return false;
     } finally {
         client.release();
     }
 }
 
-// Fonction principale pour exécuter la mise à jour une seule fois
+// Fonction principale pour exécuter via CLI
 async function main() {
-    console.log("\n📥 Démarrage de l'importation des joueurs...\n");
+    const DB_PASSWORD = settings.POSTGRES_PASSWORD;
+    const dbname = settings.POSTGRES_DB;
+    const user = settings.POSTGRES_USER;
+    const host = settings.POSTGRES_HOST;
+    const port = parseInt(String(settings.POSTGRES_PORT));
 
-    console.log("   ✅ Exécution de updatePlayers()...");
+    const pool = new Pool({
+        database: dbname,
+        user: user,
+        password: DB_PASSWORD,
+        host: host,
+        port: port,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+    });
+
     try {
-        const result = await updatePlayers();
-        if (result) {
-            console.log("   ✅ Mise à jour réussie!");
-            await pool.end();
+        console.log('🚀 Démarrage du script importation joueurs Counter-Strike...');
+        console.log(`⏰ Heure actuelle : ${new Date().toLocaleString()}\n`);
+        const ok = await importPlayers(pool);
+        if (ok) {
+            console.log('✅ Import réussi');
             process.exit(0);
         } else {
-            console.log("   ⚠️ Mise à jour échouée!");
-            await pool.end();
+            console.error('❌ Import échoué');
             process.exit(1);
         }
     } catch (e: any) {
-        console.error(`   ❌ Erreur lors de l'exécution: ${e.message}`);
-        await pool.end();
+        console.error(`❌ Erreur: ${e.message}`);
         process.exit(1);
+    } finally {
+        await pool.end();
     }
 }
 
 // Gestion de l'arrêt gracieux
 process.on('SIGINT', async () => {
-    console.log('\n\n🛑 SIGINT détecté - Arrêt du script...');
-    await pool.end();
+    console.log('\n🛑 Arrêt...');
     process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-    console.log('\n\n🛑 SIGTERM détecté - Arrêt du script...');
-    await pool.end();
+    console.log('\n🛑 Arrêt...');
     process.exit(0);
 });
 
 // Démarrer le script
-main().catch((e) => {
-    console.error('❌ Erreur fatale:', e.message);
-    process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch((e) => {
+        console.error('❌ Erreur fatale:', e.message);
+        process.exit(1);
+    });
+}

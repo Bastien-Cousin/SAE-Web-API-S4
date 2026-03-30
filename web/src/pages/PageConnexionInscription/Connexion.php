@@ -1,5 +1,4 @@
 <?php
-session_start();
 
 $error = null;
 
@@ -57,14 +56,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             "expires" => time() + (7 * 24 * 60 * 60),
                             "path" => "/",
                             "secure" => false, // mettre true en HTTPS
-                            "httponly" => true,
                             "samesite" => "Strict"
                         ]
                     );
-                }
-
-                if (isset($response["user"])) {
-                    $_SESSION["user"] = $response["user"];
                 }
 
                 header("Location: ../../index.php");

@@ -25,7 +25,7 @@ import { authRouter } from '../../src/auth.route'
 
 describe('Auth Routes', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
+        vi.resetAllMocks()
         process.env.JWT_SECRET = 'test-secret-key'
 
         // Mock bcrypt functions
@@ -44,15 +44,14 @@ describe('Auth Routes', () => {
     })
 
     afterEach(() => {
-        vi.clearAllMocks()
+        vi.resetAllMocks()
     })
 
     describe('POST /api/auth/sign-up', () => {
         it('should create user and return 201 with token', async () => {
             // Setup mocks
             vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null)
-            vi.mocked(prisma.user.create).mockResolvedValueOnce(undefined as any)
-            vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+            vi.mocked(prisma.user.create).mockResolvedValueOnce({
                 id: 1,
                 username: 'testuser',
                 email: 'test@example.com',
@@ -241,17 +240,13 @@ describe('Auth Routes', () => {
 
             expect(mockRes.status).toHaveBeenCalledWith(409)
             expect(mockRes.json).toHaveBeenCalledWith({
-                error: 'Email incorrecte',
+                error: 'Un compte existe déjà avec cet email.',
             })
         })
 
-        it('should return 500 when created user verification fails', async () => {
-            // Mock: first findUnique returns null (user doesn't exist yet)
-            // Then create is called
-            // Then second findUnique returns null (verification fails)
+        it('should return 500 when user creation fails', async () => {
             vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null)
-            vi.mocked(prisma.user.create).mockResolvedValueOnce(undefined as any)
-            vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null) // Verification finds nothing
+            vi.mocked(prisma.user.create).mockRejectedValueOnce(new Error('DB Error'))
 
             const mockRes = {
                 status: vi.fn(function (this: any, code: number) {
@@ -282,7 +277,7 @@ describe('Auth Routes', () => {
 
             expect(mockRes.status).toHaveBeenCalledWith(500)
             expect(mockRes.json).toHaveBeenCalledWith({
-                error: 'Erreur lors de l\'inscription',
+                error: 'Erreur serveur',
             })
         })
 
@@ -554,8 +549,7 @@ describe('Auth Routes', () => {
     describe('Token Generation', () => {
         it('should generate valid JWT token on sign-up', async () => {
             vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null)
-            vi.mocked(prisma.user.create).mockResolvedValueOnce(undefined as any)
-            vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+            vi.mocked(prisma.user.create).mockResolvedValueOnce({
                 id: 5,
                 username: 'newuser',
                 email: 'new@test.com',

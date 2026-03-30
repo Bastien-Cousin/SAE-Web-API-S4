@@ -19,9 +19,6 @@ const user: string = (settings.POSTGRES_USER);
 const host: string = (settings.POSTGRES_HOST);
 const port: number = parseInt(String(settings.POSTGRES_PORT));
 
-console.log('🚀 Démarrage du script importation matchs Counter-Strike...');
-console.log(`⏰ Heure actuelle : ${new Date().toLocaleString()}`);
-
 // URL de l'API Liquipedia
 const url: string = 'https://api.liquipedia.net/api/v3/match';
 
@@ -32,17 +29,22 @@ const headers: Record<string, string> = {
     'User-Agent': 'CounterStrikeUniversityProject/1.0 (Counter Strike stats; pierredeldalle.pro@gmail.com)'
 };
 
-// Configuration PostgreSQL
-const pool = new Pool({
-    database: dbname,
-    user: user,
-    password: DB_PASSWORD,
-    host: host,
-    port: port,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000
-});
+// Configuration PostgreSQL (utilisée uniquement pour l'exécution directe du script)
+function createPool(): Pool {
+    return new Pool({
+        database: dbname,
+        user: user,
+        password: DB_PASSWORD,
+        host: host,
+        port: port,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000
+    });
+}
+
+// Variable globale pour la pool (utilisée lors de l'exécution directe)
+let pool: Pool;
 
 // Interface pour les données de match
 interface match {
@@ -100,6 +102,291 @@ function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Fonction exportée pour l'import des matches (utilisée par le seed)
+export async function importMatches(pool: Pool): Promise<boolean> {
+    try {
+        console.log('\n' + '='.repeat(60));
+        console.log('📥 IMPORT DES MATCHES DEPUIS L\'API LIQUIPEDIA');
+        console.log('='.repeat(60));
+
+        // Récupérer les matches from API
+        const matchesData: match[] = [];
+        const MAX_MATCHES: number = 3000;
+        const params: PaginationParams = {
+            wiki: 'counterstrike',
+            conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2025-01-01]]',
+            limit: 100,
+            offset: 0
+        };
+
+        let page: number = 1;
+        let totalFetched: number = 0;
+
+        // Pagination pour récupérer tous les matchs
+        while (totalFetched < MAX_MATCHES) {
+            console.log(`\n📄 Page ${page} - Offset: ${params.offset}`);
+
+            try {
+                const response = await axios.get<{ result: match[] }>(url, {
+                    headers: headers,
+                    params: params,
+                    timeout: 10000
+                });
+
+                if (response.status === 200) {
+                    const data: match[] = response.data.result || [];
+                    console.log(`   ✅ ${data.length} matchs récupérés`);
+
+                    if (data.length === 0) {
+                        console.log('   ✋ Fin de la pagination');
+                        break;
+                    }
+
+                    const remainingSlots = MAX_MATCHES - totalFetched;
+                    const dataToAdd = data.slice(0, remainingSlots);
+                    matchesData.push(...dataToAdd);
+                    totalFetched += dataToAdd.length;
+
+                    if (totalFetched >= MAX_MATCHES) {
+                        console.log(`   ⚠️ Limite de ${MAX_MATCHES} matchs atteinte`);
+                        break;
+                    }
+
+                    params.offset += params.limit;
+                    await sleep(2000);
+                    page++;
+                }
+            } catch (error: any) {
+                if (error.response?.status === 429) {
+                    console.log('   ⏱️ Rate limit (429) - attente 2h...');
+                    await sleep(7200000);
+                    continue;
+                } else {
+                    console.error(`   ❌ Erreur: ${error.message}`);
+                    break;
+                }
+            }
+        }
+
+        console.log(`\n📊 Total récupéré: ${totalFetched}`);
+
+        // Insertion dans la base de données
+        const client: PoolClient = await pool.connect();
+
+        try {
+            console.log('\n🔌 Connexion à la base de données...');
+            console.log('✅ Connecté à PostgreSQL\n');
+
+            let totalInserted: number = 0;
+
+            for (const match of matchesData) {
+                try {
+                    const checkQuery = 'SELECT 1 FROM match WHERE pageid = $1';
+                    const existsResult = await client.query(checkQuery, [match.pageid]);
+
+                    if (existsResult.rows.length > 0) {
+                        console.log(`   ℹ️ ${match.objectname} existe déjà`);
+                        continue;
+                    }
+
+                    let dateValue: string | null = match.date || null;
+                    if (dateValue === '0000-01-01' || !dateValue || dateValue.startsWith('0000-')) {
+                        dateValue = null;
+                    }
+
+                    let finished: boolean | null = match.finished || false;
+                    let dateexact: boolean | null = match.dateexact || false;
+
+                    const query = `
+            INSERT INTO match (
+                pageid, pagename, namespace, objectname, match2id, match2bracketid, status, winner, walkover, 
+                resulttype, finished, mode, type, section, game, patch, links, bestof, date, dateexact, 
+                stream, vod, tournament, parent, tickername, shortname, series, icon, iconurl, icondark, 
+                icondarkurl, liquipediatier, liquipediatiertype, publishertier, extradata, match2bracketdata, 
+                match2games, match2opponents
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 
+                $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38
+            ) ON CONFLICT (pageid) DO UPDATE SET
+                pagename = EXCLUDED.pagename,
+                namespace = EXCLUDED.namespace,
+                match2id = EXCLUDED.match2id,
+                match2bracketid = EXCLUDED.match2bracketid,
+                status = EXCLUDED.status,
+                winner = EXCLUDED.winner,
+                walkover = EXCLUDED.walkover,
+                resulttype = EXCLUDED.resulttype,
+                finished = EXCLUDED.finished,
+                mode = EXCLUDED.mode,
+                type = EXCLUDED.type,
+                section = EXCLUDED.section,
+                game = EXCLUDED.game,
+                patch = EXCLUDED.patch,
+                links = EXCLUDED.links,
+                bestof = EXCLUDED.bestof,
+                date = EXCLUDED.date,
+                dateexact = EXCLUDED.dateexact,
+                stream = EXCLUDED.stream,
+                vod = EXCLUDED.vod,
+                tournament = EXCLUDED.tournament,
+                parent = EXCLUDED.parent,
+                tickername = EXCLUDED.tickername,
+                shortname = EXCLUDED.shortname,
+                series = EXCLUDED.series,
+                icon = EXCLUDED.icon,
+                iconurl = EXCLUDED.iconurl,
+                icondark = EXCLUDED.icondark,
+                icondarkurl = EXCLUDED.icondarkurl,
+                liquipediatier = EXCLUDED.liquipediatier,
+                liquipediatiertype = EXCLUDED.liquipediatiertype,
+                publishertier = EXCLUDED.publishertier,
+                extradata = EXCLUDED.extradata,
+                match2bracketdata = EXCLUDED.match2bracketdata,
+                match2games = EXCLUDED.match2games,
+                match2opponents = EXCLUDED.match2opponents;
+          `;
+
+                    const values: any[] = [
+                        match.pageid,
+                        match.pagename,
+                        match.namespace,
+                        match.objectname,
+                        match.match2id,
+                        match.match2bracketid,
+                        match.status,
+                        match.winner,
+                        match.walkover,
+                        match.resulttype,
+                        finished,
+                        match.mode,
+                        match.type,
+                        match.section,
+                        match.game,
+                        match.patch,
+                        JSON.stringify(match.links || {}),
+                        match.bestof,
+                        dateValue,
+                        dateexact,
+                        JSON.stringify(match.stream || {}),
+                        match.vod,
+                        match.tournament,
+                        match.parent,
+                        match.tickername,
+                        match.shortname,
+                        match.series,
+                        match.icon,
+                        match.iconurl,
+                        match.icondark,
+                        match.icondarkurl,
+                        match.liquipediatier,
+                        match.liquipediatiertype,
+                        match.publishertier,
+                        JSON.stringify(match.extradata || {}),
+                        JSON.stringify(match.match2bracketdata || {}),
+                        JSON.stringify(match.match2games || {}),
+                        JSON.stringify(match.match2opponents || {})
+                    ];
+
+                    await client.query(query, values);
+                    totalInserted++;
+                    console.log(`   ✅ ${match.objectname} inséré`);
+                } catch (error: any) {
+                    console.error(`   ❌ Erreur: ${match.objectname}: ${error.message}`);
+                }
+            }
+
+            console.log(`\n💾 ${totalInserted} matchs insérés`);
+
+            // Lier les équipes aux matches using the provided pool's client
+            await linkTeamsToMatchesExport(client);
+
+            console.log('='.repeat(60));
+            console.log('✅ IMPORT TERMINÉ');
+            console.log('='.repeat(60) + '\n');
+
+            return true;
+        } finally {
+            client.release();
+        }
+    } catch (error: any) {
+        console.error(`❌ Erreur: ${error.message}`);
+        return false;
+    }
+}
+
+// Fonction pour lier les équipes aux matches (version pour export)
+async function linkTeamsToMatchesExport(client: PoolClient): Promise<void> {
+    console.log('\n' + '='.repeat(60));
+    console.log('🔗 LIAISON DES ÉQUIPES AUX MATCHES');
+    console.log('='.repeat(60));
+
+    try {
+        const matchesWithoutTeams = await client.query(`
+            SELECT pageid, match2opponents FROM match 
+            WHERE team1_id IS NULL AND match2opponents IS NOT NULL
+            ORDER BY pageid DESC
+        `);
+
+        console.log(`   📋 ${matchesWithoutTeams.rows.length} matches à traiter`);
+
+        let linked = 0;
+        let skipped = 0;
+
+        for (const row of matchesWithoutTeams.rows) {
+            try {
+                const opponents = typeof row.match2opponents === 'string' 
+                    ? JSON.parse(row.match2opponents) 
+                    : row.match2opponents;
+                
+                if (!Array.isArray(opponents) || opponents.length < 2) {
+                    skipped++;
+                    continue;
+                }
+
+                const team1Name = opponents[0].name?.trim();
+                const team2Name = opponents[1].name?.trim();
+
+                if (!team1Name || !team2Name) {
+                    skipped++;
+                    continue;
+                }
+
+                const team1Result = await client.query(
+                    'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
+                    [team1Name]
+                );
+                const team2Result = await client.query(
+                    'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
+                    [team2Name]
+                );
+
+                if (team1Result.rows.length === 0 || team2Result.rows.length === 0) {
+                    skipped++;
+                    continue;
+                }
+
+                const team1Id = team1Result.rows[0].pageid;
+                const team2Id = team2Result.rows[0].pageid;
+
+                await client.query(
+                    'UPDATE match SET team1_id = $1, team2_id = $2 WHERE pageid = $3',
+                    [team1Id, team2Id, row.pageid]
+                );
+
+                linked++;
+                console.log(`   ✅ Match ${row.pageid}: lié`);
+            } catch (error: any) {
+                console.error(`   ❌ Erreur: ${error.message}`);
+                skipped++;
+            }
+        }
+
+        console.log(`\n   📊 ${linked} liés, ${skipped} ignorés`);
+    } catch (error: any) {
+        console.error(`   ❌ Erreur: ${error.message}`);
+    }
+}
+
 // Fonction pour importer les matches d'un tournoi spécifique
 async function importTournamentMatches(tournamentName: string): Promise<void> {
     console.log('\n' + '='.repeat(60));
@@ -116,7 +403,7 @@ async function importTournamentMatches(tournamentName: string): Promise<void> {
 
     let page: number = 1;
     let totalFetched: number = 0;
-    const MAX_MATCHES: number = 1000;
+    const MAX_MATCHES: number = 3000;
 
     try {
         // Pagination pour récupérer tous les matchs du tournoi
@@ -153,8 +440,8 @@ async function importTournamentMatches(tournamentName: string): Promise<void> {
                 }
             } catch (error: any) {
                 if (error.response?.status === 429) {
-                    console.log('   ⏱️ Rate limit (429) - attente 60s...');
-                    await sleep(60000);
+                    console.log('   ⏱️ Rate limit (429) - attente 2h...');
+                    await sleep(7200000);
                     continue;
                 } else {
                     console.error(`   ❌ Erreur: ${error.message}`);
@@ -363,7 +650,7 @@ async function updateMatches(): Promise<void> {
     console.log('='.repeat(60));
 
     const matchesData: match[] = [];
-    const MAX_MATCHES: number = 5000;
+    const MAX_MATCHES: number = 3000;
     const params: PaginationParams = {
         wiki: 'counterstrike',
         conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2025-01-01]]',
@@ -419,8 +706,8 @@ async function updateMatches(): Promise<void> {
                 }
             } catch (error: any) {
                 if (error.response?.status === 429) {
-                    console.log('   ⏱️ Rate limit détecté (429) - attente 60s...');
-                    await sleep(60000);
+                    console.log('   ⏱️ Rate limit détecté (429) - attente 2h...');
+                    await sleep(7200000);
                     continue;
                 } else {
                     console.error(`   ❌ Erreur requête : ${error.message}`);
@@ -578,6 +865,9 @@ async function updateMatches(): Promise<void> {
 
 // Fonction principale pour exécuter la mise à jour une seule fois
 async function main(): Promise<void> {
+    // Créer la pool pour l'exécution directe
+    pool = createPool();
+
     try {
         // Vérifier si un argument est fourni pour importer un tournoi spécifique
         const args = process.argv.slice(2);
@@ -616,7 +906,9 @@ process.on('SIGTERM', async () => {
 });
 
 // Démarrer le script
-main().catch((e) => {
-    console.error('❌ Erreur fatale:', e.message);
-    process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch((e) => {
+        console.error('❌ Erreur fatale:', e.message);
+        process.exit(1);
+    });
+}
