@@ -41,6 +41,8 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/swagger.yaml ./swagger.yaml
 
+RUN ls -la /app
+
 EXPOSE 3070
 
 COPY entrypoint.production.sh /app/entrypoint.production.sh
