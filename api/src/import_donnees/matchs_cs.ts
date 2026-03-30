@@ -111,7 +111,7 @@ export async function importMatches(pool: Pool): Promise<boolean> {
 
         // Récupérer les matches from API
         const matchesData: match[] = [];
-        const MAX_MATCHES: number = 1000;
+        const MAX_MATCHES: number = 3000;
         const params: PaginationParams = {
             wiki: 'counterstrike',
             conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2025-01-01]]',
@@ -403,7 +403,7 @@ async function importTournamentMatches(tournamentName: string): Promise<void> {
 
     let page: number = 1;
     let totalFetched: number = 0;
-    const MAX_MATCHES: number = 1000;
+    const MAX_MATCHES: number = 3000;
 
     try {
         // Pagination pour récupérer tous les matchs du tournoi
@@ -650,7 +650,7 @@ async function updateMatches(): Promise<void> {
     console.log('='.repeat(60));
 
     const matchesData: match[] = [];
-    const MAX_MATCHES: number = 1000;
+    const MAX_MATCHES: number = 3000;
     const params: PaginationParams = {
         wiki: 'counterstrike',
         conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2025-01-01]]',
@@ -906,7 +906,9 @@ process.on('SIGTERM', async () => {
 });
 
 // Démarrer le script
-main().catch((e) => {
-    console.error('❌ Erreur fatale:', e.message);
-    process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch((e) => {
+        console.error('❌ Erreur fatale:', e.message);
+        process.exit(1);
+    });
+}
