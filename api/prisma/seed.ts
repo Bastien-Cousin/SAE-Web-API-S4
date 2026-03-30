@@ -167,98 +167,69 @@ async function main() {
     })
 
     try {
-        // ⚠️ IMPORTANT: Les imports doivent s'exécuter dans ce STRICT ORDRE
-        // 1. Équipes (pas de dépendances)
-        // 2. Tournois (pas de dépendances)
-        // 3. Joueurs (dépendent des équipes pour team_id)
-        // 4. Matchs (dépendent des équipes ET des joueurs)
-        
-        console.log('\n⚠️  ORDRE D\'EXÉCUTION SEQUENTIELLE DES IMPORTS (CRITICAL)')
-        console.log('Équipes → Tournois → Joueurs → Matchs\n')
+        const importSteps = [
+            { name: 'Équipes', fn: () => importTeams(pool) },
+            { name: 'Joueurs', fn: () => importPlayers(pool) },
+            { name: 'Matchs', fn: () => importMatches(pool) },
+            { name: 'Tournois', fn: () => importTournaments(pool) },
+        ]
 
-        // ÉTAPE 1: Équipes (aucune dépendance)
-        console.log(`\n${'='.repeat(60)}`)
-        console.log(`📥 ÉTAPE 1/4: Importation des ÉQUIPES (aucune dépendance)`)
-        console.log('='.repeat(60))
-        const teamResult = await importTeams(pool)
-        if (!teamResult) {
-            throw new Error('❌ IMPORT ÉQUIPES ÉCHOUÉ - ARRÊT')
+        for (const step of importSteps) {
+            console.log(`\n${'='.repeat(60)}`)
+            console.log(`📥 Running: ${step.name}`)
+            console.log('='.repeat(60))
+
+            try {
+                const ok = await step.fn()
+                if (ok) {
+                    console.log(`✅ ${step.name} imported successfully\n`)
+                } else {
+                    console.error(`❌ ${step.name} failed\n`)
+                }
+            } catch (error: any) {
+                console.error(`❌ ${step.name} error: ${error.message}\n`)
+            }
         }
-        console.log(`✅ ÉQUIPES importées avec succès\n`)
 
-        // ÉTAPE 2: Tournois (aucune dépendance)
-        console.log(`\n${'='.repeat(60)}`)
-        console.log(`📥 ÉTAPE 2/4: Importation des TOURNOIS (aucune dépendance)`)
         console.log('='.repeat(60))
-        const tournamentResult = await importTournaments(pool)
-        if (!tournamentResult) {
-            throw new Error('❌ IMPORT TOURNOIS ÉCHOUÉ - ARRÊT')
+        console.log('✅ All imports completed')
+        console.log('='.repeat(60))
+
+        // Run asset downloads and fixes
+        console.log('\n' + '='.repeat(60))
+        console.log('🎨 Starting asset downloads and fixes...')
+        console.log('='.repeat(60))
+
+        const assetSteps = [
+            { name: 'Télécharger logos d\'équipes', command: 'npx tsx ./src/scripts/download-team-logos.ts' },
+            { name: 'Corriger URLs logos d\'équipes', command: 'npx tsx ./src/scripts/fix-team-logo-urls.ts' },
+            { name: 'Télécharger bannières de tournois', command: 'npx tsx ./src/scripts/download-tournament-banners.ts' },
+            { name: 'Corriger URLs bannières de tournois', command: 'npx tsx ./src/scripts/fix-tournament-banner-urls.ts' },
+        ]
+
+        for (const step of assetSteps) {
+            console.log(`\n${'='.repeat(60)}`)
+            console.log(`📥 Running: ${step.name}`)
+            console.log('='.repeat(60))
+
+            try {
+                const { execSync } = await import('child_process')
+                execSync(step.command, { 
+                    cwd: process.cwd(),
+                    stdio: 'inherit'
+                })
+                console.log(`✅ ${step.name} completed\n`)
+            } catch (error: any) {
+                console.error(`❌ ${step.name} error: ${error.message}\n`)
+            }
         }
-        console.log(`✅ TOURNOIS importés avec succès\n`)
-
-        // ÉTAPE 3: Joueurs (DÉPENDENT DES ÉQUIPES - attendre l'étape 1)
-        console.log(`\n${'='.repeat(60)}`)
-        console.log(`📥 ÉTAPE 3/4: Importation des JOUEURS (dépendent des équipes)`)
-        console.log('='.repeat(60))
-        const playerResult = await importPlayers(pool)
-        if (!playerResult) {
-            throw new Error('❌ IMPORT JOUEURS ÉCHOUÉ - ARRÊT')
-        }
-        console.log(`✅ JOUEURS importés avec succès\n`)
-
-        // ÉTAPE 4: Matchs (DÉPENDENT DE TOUT - attendre étapes 1, 2, 3)
-        console.log(`\n${'='.repeat(60)}`)
-        console.log(`📥 ÉTAPE 4/4: Importation des MATCHS (dépendent des équipes ET joueurs)`)
-        console.log('='.repeat(60))
-        const matchResult = await importMatches(pool)
-        if (!matchResult) {
-            throw new Error('❌ IMPORT MATCHS ÉCHOUÉ - ARRÊT')
-        }
-        console.log(`✅ MATCHS importés avec succès\n`)
 
         console.log('='.repeat(60))
-        console.log('✅ TOUS LES IMPORTS COMPLÉTÉS AVEC SUCCÈS')
+        console.log('✅ All asset downloads and fixes completed')
         console.log('='.repeat(60))
-    } catch (error: any) {
-        console.error(`\n❌ ERREUR CRITIQUE: ${error.message}`)
-        console.error('\n⚠️  L\'IMPORT A ÉTÉ ARRÊTÉ POUR ÉVITER UNE CORRUPTION DE DONNÉES')
-        process.exit(1)
     } finally {
         await pool.end()
     }
-
-    // Run asset downloads and fixes
-    console.log('\n' + '='.repeat(60))
-    console.log('🎨 Starting asset downloads and fixes...')
-    console.log('='.repeat(60))
-
-    const assetSteps = [
-        { name: 'Télécharger logos d\'équipes', command: 'npx tsx ./src/scripts/download-team-logos.ts' },
-        { name: 'Corriger URLs logos d\'équipes', command: 'npx tsx ./src/scripts/fix-team-logo-urls.ts' },
-        { name: 'Télécharger bannières de tournois', command: 'npx tsx ./src/scripts/download-tournament-banners.ts' },
-        { name: 'Corriger URLs bannières de tournois', command: 'npx tsx ./src/scripts/fix-tournament-banner-urls.ts' },
-    ]
-
-    for (const step of assetSteps) {
-        console.log(`\n${'='.repeat(60)}`)
-        console.log(`🎯 ${step.name}`)
-        console.log('='.repeat(60))
-
-        try {
-            const { execSync } = await import('child_process')
-            execSync(step.command, { 
-                cwd: process.cwd(),
-                stdio: 'inherit'
-            })
-            console.log(`✅ ${step.name} completed\n`)
-        } catch (error: any) {
-            console.error(`❌ ${step.name} error: ${error.message}\n`)
-        }
-    }
-
-    console.log('='.repeat(60))
-    console.log('✅ All asset downloads and fixes completed')
-    console.log('='.repeat(60))
 }
 
 main()

@@ -104,8 +104,6 @@ function sleep(ms: number): Promise<void> {
 
 // Fonction exportée pour l'import des matches (utilisée par le seed)
 export async function importMatches(pool: Pool): Promise<boolean> {
-    console.log(`\n⏰ [${new Date().toISOString()}] 🚀 DÉBUT importMatches()`)
-    
     try {
         console.log('\n' + '='.repeat(60));
         console.log('📥 IMPORT DES MATCHES DEPUIS L\'API LIQUIPEDIA');
@@ -113,10 +111,10 @@ export async function importMatches(pool: Pool): Promise<boolean> {
 
         // Récupérer les matches from API
         const matchesData: match[] = [];
-        const MAX_MATCHES: number = 5000;
+        const MAX_MATCHES: number = 3000;
         const params: PaginationParams = {
             wiki: 'counterstrike',
-            conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2020-01-01]]',
+            conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2025-01-01]]',
             limit: 100,
             offset: 0
         };
@@ -132,7 +130,7 @@ export async function importMatches(pool: Pool): Promise<boolean> {
                 const response = await axios.get<{ result: match[] }>(url, {
                     headers: headers,
                     params: params,
-                    timeout: 30000
+                    timeout: 10000
                 });
 
                 if (response.status === 200) {
@@ -306,14 +304,12 @@ export async function importMatches(pool: Pool): Promise<boolean> {
             console.log('✅ IMPORT TERMINÉ');
             console.log('='.repeat(60) + '\n');
 
-            console.log(`⏰ [${new Date().toISOString()}] ✅ FIN importMatches() - SUCCÈS\n`);
             return true;
         } finally {
             client.release();
         }
     } catch (error: any) {
         console.error(`❌ Erreur: ${error.message}`);
-        console.error(`⏰ [${new Date().toISOString()}] ❌ FIN importMatches() - ÉCHEC\n`);
         return false;
     }
 }
@@ -355,43 +351,14 @@ async function linkTeamsToMatchesExport(client: PoolClient): Promise<void> {
                     continue;
                 }
 
-                // Récupérer les IDs des équipes (recherche exacte + insensible à la casse)
-                let team1Result = await client.query(
+                const team1Result = await client.query(
                     'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
                     [team1Name]
                 );
-                let team2Result = await client.query(
+                const team2Result = await client.query(
                     'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
                     [team2Name]
                 );
-
-                // Si pas de correspondance exacte, essayer avec LIKE (recherche flexible)
-                if (team1Result.rows.length === 0) {
-                    team1Result = await client.query(
-                        'SELECT pageid FROM team WHERE LOWER(name) LIKE LOWER($1) LIMIT 1',
-                        [`%${team1Name}%`]
-                    );
-                }
-                if (team2Result.rows.length === 0) {
-                    team2Result = await client.query(
-                        'SELECT pageid FROM team WHERE LOWER(name) LIKE LOWER($1) LIMIT 1',
-                        [`%${team2Name}%`]
-                    );
-                }
-
-                // Essayer aussi une recherche inverse (le nom de la DB contient le nom de l'API)
-                if (team1Result.rows.length === 0) {
-                    team1Result = await client.query(
-                        'SELECT pageid FROM team WHERE $1 LIKE LOWER(name) || \'%\' LIMIT 1',
-                        [team1Name.toLowerCase()]
-                    );
-                }
-                if (team2Result.rows.length === 0) {
-                    team2Result = await client.query(
-                        'SELECT pageid FROM team WHERE $1 LIKE LOWER(name) || \'%\' LIMIT 1',
-                        [team2Name.toLowerCase()]
-                    );
-                }
 
                 if (team1Result.rows.length === 0 || team2Result.rows.length === 0) {
                     skipped++;
@@ -436,7 +403,7 @@ async function importTournamentMatches(tournamentName: string): Promise<void> {
 
     let page: number = 1;
     let totalFetched: number = 0;
-    const MAX_MATCHES: number = 5000;
+    const MAX_MATCHES: number = 3000;
 
     try {
         // Pagination pour récupérer tous les matchs du tournoi
@@ -447,7 +414,7 @@ async function importTournamentMatches(tournamentName: string): Promise<void> {
                 const response = await axios.get<{ result: match[] }>(url, {
                     headers: headers,
                     params: params,
-                    timeout: 30000
+                    timeout: 10000
                 });
 
                 if (response.status === 200) {
@@ -636,42 +603,14 @@ async function linkTeamsToMatches(client: PoolClient): Promise<void> {
                 }
 
                 // Récupérer les IDs des équipes (recherche exacte + insensible à la casse)
-                let team1Result = await client.query(
+                const team1Result = await client.query(
                     'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
                     [team1Name]
                 );
-                let team2Result = await client.query(
+                const team2Result = await client.query(
                     'SELECT pageid FROM team WHERE LOWER(name) = LOWER($1) LIMIT 1',
                     [team2Name]
                 );
-
-                // Si pas de correspondance exacte, essayer avec LIKE (recherche flexible)
-                if (team1Result.rows.length === 0) {
-                    team1Result = await client.query(
-                        'SELECT pageid FROM team WHERE LOWER(name) LIKE LOWER($1) LIMIT 1',
-                        [`%${team1Name}%`]
-                    );
-                }
-                if (team2Result.rows.length === 0) {
-                    team2Result = await client.query(
-                        'SELECT pageid FROM team WHERE LOWER(name) LIKE LOWER($1) LIMIT 1',
-                        [`%${team2Name}%`]
-                    );
-                }
-
-                // Essayer aussi une recherche inverse (le nom de la DB contient le nom de l'API)
-                if (team1Result.rows.length === 0) {
-                    team1Result = await client.query(
-                        'SELECT pageid FROM team WHERE $1 LIKE LOWER(name) || \'%\' LIMIT 1',
-                        [team1Name.toLowerCase()]
-                    );
-                }
-                if (team2Result.rows.length === 0) {
-                    team2Result = await client.query(
-                        'SELECT pageid FROM team WHERE $1 LIKE LOWER(name) || \'%\' LIMIT 1',
-                        [team2Name.toLowerCase()]
-                    );
-                }
 
                 if (team1Result.rows.length === 0 || team2Result.rows.length === 0) {
                     console.log(`   ⏭️  Match ${row.pageid}: équipes non trouvées (${team1Name} vs ${team2Name})`);
@@ -711,10 +650,10 @@ async function updateMatches(): Promise<void> {
     console.log('='.repeat(60));
 
     const matchesData: match[] = [];
-    const MAX_MATCHES: number = 5000;
+    const MAX_MATCHES: number = 3000;
     const params: PaginationParams = {
         wiki: 'counterstrike',
-        conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2020-01-01]][',
+        conditions: '([[liquipediatier::1]] OR [[liquipediatier::2]] OR [[liquipediatier::3]]) AND [[date::>2025-01-01]]',
         limit: 100,
         offset: 0
     };
@@ -731,7 +670,7 @@ async function updateMatches(): Promise<void> {
                 const response = await axios.get<{ result: match[] }>(url, {
                     headers: headers,
                     params: params,
-                    timeout: 30000
+                    timeout: 10000
                 });
 
                 console.log(`   Status Code: ${response.status}`);
@@ -967,7 +906,9 @@ process.on('SIGTERM', async () => {
 });
 
 // Démarrer le script
-main().catch((e) => {
-    console.error('❌ Erreur fatale:', e.message);
-    process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch((e) => {
+        console.error('❌ Erreur fatale:', e.message);
+        process.exit(1);
+    });
+}
