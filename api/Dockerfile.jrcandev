@@ -16,6 +16,7 @@ RUN npx prisma generate
 # 4. Code applicatif
 COPY tsconfig.json ./
 COPY src ./src
+COPY swagger.yaml ./
 
 # 5. Compilation des sources pour une version en production
 RUN npm run build
@@ -38,6 +39,7 @@ COPY --from=builder /app/prisma ./prisma
 
 # 3. Récupération du Code applicatif compilé
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/swagger.yaml ./swagger.yaml
 
 EXPOSE 3070
 
