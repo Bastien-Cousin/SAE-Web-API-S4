@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express'
 import { prisma } from '../client.js'
 import { convertBigInt } from '../utils/convertBigInt.js'
+import { Prisma } from '@prisma/client'
 
 const slugify = (value: string): string => {
     return value
@@ -135,7 +136,7 @@ export const createTeam = async (req: Request, res: Response) => {
                 logourl: logoUrl || null,
                 createdate,
                 earnings,
-                extradata: ceo ? { ceo } : undefined,
+                extradata: ceo ? { ceo } : Prisma.JsonNull,
             },
         })
 

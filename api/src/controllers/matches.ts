@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express'
 import { prisma } from '../client.js'
 import { convertBigInt } from '../utils/convertBigInt.js'
+import { Prisma } from '@prisma/client'
 
 export const getAllMatches = async (req: Request, res: Response) => {
     try {
@@ -255,10 +256,12 @@ export const createMatch = async (req: Request, res: Response) => {
 
             for (const game of maps) {
                 const [left, right] = game.score.split('-').map((value) => Number.parseInt(value, 10))
-                if (left > right) {
-                    wins1++
-                } else if (right > left) {
-                    wins2++
+                if (left !== undefined && right !== undefined) {
+                    if (left > right) {
+                        wins1++
+                    } else if (right > left) {
+                        wins2++
+                    }
                 }
             }
 
@@ -280,7 +283,7 @@ export const createMatch = async (req: Request, res: Response) => {
             ]
             : null
 
-        const match = await prisma.$transaction(async (tx) => {
+        const match = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const created = await tx.match.create({
                 data: {
                     pageid: nextPageId,
@@ -293,8 +296,8 @@ export const createMatch = async (req: Request, res: Response) => {
                     finished: isFinished,
                     status: isFinished ? 'finished' : 'upcoming',
                     winner,
-                    match2games: maps.length > 0 ? maps : null,
-                    match2opponents,
+                    match2games: maps.length > 0 ? maps : Prisma.JsonNull,
+                    match2opponents: match2opponents ?? Prisma.JsonNull,
                 },
                 include: {
                     team1: { select: { pageid: true, name: true } },
