@@ -33,7 +33,7 @@
     "setup": "npm run db:migrate && npm run db:generate && npm run db:seed && npm run import:all && npm run download:team-logos && npm run fix:team-urls && npm run download:tournament-assets && npm run fix:tournament-banner-urls && npm run reset:tournament-urls"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
