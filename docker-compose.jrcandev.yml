@@ -16,8 +16,20 @@ services:
       context: ./api
       dockerfile: Dockerfile.jrcandev
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      NAME=sae-web-but2-groupe7
+      POSTGRES_USER=sae_user
+      POSTGRES_PASSWORD=sae_password
+      POSTGRES_DB=sae_db
+      POSTGRES_HOST=db
+      POSTGRES_PORT=5432
+      API_PORT=3070
+      DATABASE_URL=postgresql://sae_user:sae_password@db:5432/sae_db
+      JWT_SECRET=8f14939e33a41aa4f05c87998be7764caebef86469f9fc84ec223d63fb5c1be9fe52be240afbed06d5d6d16fd4340426b13178c067691ae37aa94e4eb3a6ce8e
+      LIQUIPEDIA_API_KEY_TEAM='TJe2uzczu3ILkuXkf2zEnQdjC98UXuQrQBGkNDSj7CQqlqGg5ydKmlYc4ZHvoeIj8X2XdKsIui4AeUfrmsHlsOv8ZbnMZlRxgdA0maIqJ8pevi04UHPP8lhi7OM9dxvl'
+      LIQUIPEDIA_API_KEY_PLAYER='cxW8q0zEudrs3Xr4hnkMm6ilfd0p5yl1lv7D9LUWKdD4TPerjHZerJW1V3v0JGb7ZF4SHxdas8u6SP6y7HderQSHJsxvc1Ug2Kj2T2F2datKOaGetfHuNu8U1rOU4bu3'
+      LIQUIPEDIA_API_KEY_MATCHES='5LEd2PO78d4qjE6xebF3MlKt2druR00NEl29kV2ge9MJGJsygUaGhVvu4VyiVRjuobYa2ttWXBuySuT2TW0FGDvVJc597GaiQzn2fVdIB4V4z6xOChidCbEAgzBSgWqh'
+      LIQUIPEDIA_API_KEY_TOURNAMENT='LUM60ETTnmsFma4d7FGVnj0m0XhK4JJ0LpQt5X0KEeB4950n2FBd2AEsR32GCAKpxB9q1P4PC9ocbQxf5QtAs9Xzp7Dr72BmblzHMHjOCuXzuGh84ulAC5D6BqJr3dgV'
     depends_on:
       - db
     networks:
