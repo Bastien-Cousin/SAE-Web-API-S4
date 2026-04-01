@@ -3,7 +3,7 @@ set -e
 
 echo "Waiting for PostgreSQL at $DB_HOST:$DB_PORT..."
 counter=0
-max_attempts=60
+max_attempts=61
 
 while [ $counter -lt $max_attempts ]; do
     if nc -z -w1 "$DB_HOST" "$DB_PORT" 2>/dev/null; then
