@@ -11,6 +11,9 @@ RUN npm install
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 
+# Variable fake juste pour le build
+ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
+
 # 3. Génération du client Prisma
 RUN npx prisma generate
 
