@@ -22,7 +22,7 @@ fi
 
 sleep 2
 echo "Running migrations..."
-npx prisma migrate deploy --schema prisma/schema.prisma
+npx prisma migrate deploy --config prisma.config.ts
 
 echo "Seeding database..."
 npx prisma db seed
