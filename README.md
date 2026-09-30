@@ -1,376 +1,327 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/Tg-sf9xJ)
-[![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-2e0aaae1b6195c2367325f4f02e2d04e9abb55f0b24a779b69b11b9e10269abc.svg)](https://classroom.github.com/online_ide?assignment_repo_id=23237801&assignment_repo_type=AssignmentRepo)
-# SAÉ BUT Informatique 2 – Projet Web & API Dockerisé
+# 🎮 Plateforme e-sport Counter-Strike — Web & API
 
-Ce dépôt constitue la **base de travail** dans le cadre de la SAÉ de 2ᵉ année BUT Informatique (développement web & API).
+Application web full-stack consacrée à l'écosystème compétitif de **Counter-Strike**, permettant de consulter des informations sur les équipes, joueurs, matchs et tournois, ainsi que de réaliser des prédictions sur les rencontres à venir.
 
-Les étudiants travailleront **en groupe de 3 à 5**, via **GitHub**, et devront compléter / étendre ce socle technique.
+Le projet repose sur une architecture séparant une interface web en **PHP**, une **API REST Node.js / Express** et une base de données **PostgreSQL**, l'ensemble étant conteneurisé avec Docker.
+
+![PHP](https://img.shields.io/badge/PHP-777BB4?style=for-the-badge&logo=php&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ---
 
-## 🚀 Démarrage Rapide
+## 🌐 À propos du projet
+
+L'application centralise différentes données issues de la scène compétitive **Counter-Strike / Counter-Strike 2**.
+
+Elle permet notamment de consulter :
+
+- les équipes professionnelles ;
+- les joueurs ;
+- les matchs passés et à venir ;
+- les tournois ;
+- différentes statistiques liées aux compétitions.
+
+Les données sont stockées dans une base PostgreSQL et rendues accessibles au site web par l'intermédiaire d'une API REST.
+
+Une partie du jeu de données peut également être importée automatiquement depuis **Liquipedia**.
+
+---
+
+## ✨ Fonctionnalités principales
+
+### 👥 Équipes et joueurs
+
+L'application permet de consulter les différentes équipes présentes dans la base ainsi que leurs joueurs.
+
+Les informations disponibles comprennent notamment :
+
+- le nom de l'équipe ;
+- sa région ;
+- son logo ;
+- ses gains en compétition ;
+- les joueurs qui lui sont associés ;
+- la nationalité et différentes informations sur les joueurs.
+
+### 🎯 Matchs
+
+Les matchs peuvent être consultés avec différentes informations comme :
+
+- les deux équipes participantes ;
+- la date de la rencontre ;
+- le résultat ;
+- le vainqueur ;
+- le tournoi associé ;
+- le statut du match.
+
+Il est également possible de consulter les matchs associés à une équipe particulière.
+
+### 🏆 Tournois
+
+L'application référence différents tournois de la scène Counter-Strike avec notamment :
+
+- leur nom ;
+- leurs dates ;
+- leur bannière ;
+- leur prize pool ;
+- la version du jeu concernée.
+
+### 🔮 Prédictions
+
+Les utilisateurs peuvent réaliser des prédictions sur les matchs à venir.
+
+Une prédiction peut contenir :
+
+- l'équipe supposée gagnante ;
+- un niveau de confiance ;
+- des prédictions plus détaillées sur les différentes maps d'une rencontre ;
+- les scores attendus ;
+- la date de création de la prédiction.
+
+Les prédictions sont associées à la fois au match concerné et à l'utilisateur qui les a créées.
+
+---
+
+## 📊 Logique de prédiction
+
+Le projet utilise une approche statistique simple et explicable pour analyser les performances des équipes.
+
+Plusieurs éléments peuvent être pris en compte :
+
+- **historique global** — taux de victoire d'une équipe ;
+- **confrontations directes** — résultats précédents entre deux équipes ;
+- **performances par map** — taux de victoire sur une carte particulière ;
+- **forme récente** — résultats obtenus lors des derniers matchs.
+
+Ces informations permettent d'obtenir des indicateurs servant à comparer les équipes avant une rencontre.
+
+L'objectif n'est pas d'utiliser un modèle de machine learning complexe, mais de construire une prédiction compréhensible à partir de statistiques existantes.
+
+---
+
+## 🔐 Authentification
+
+L'application dispose également d'un système d'authentification permettant d'associer certaines actions à un utilisateur.
+
+L'API utilise notamment une authentification basée sur **JWT**.
+
+Une fois authentifié, un utilisateur peut accéder aux fonctionnalités nécessitant un compte, notamment la gestion de ses prédictions.
+
+---
+
+## 🔄 Import des données
+
+Une partie des données utilisées par l'application est récupérée depuis **Liquipedia**.
+
+Des scripts dédiés permettent notamment d'importer :
+
+- les équipes ;
+- les joueurs ;
+- les matchs ;
+- les tournois.
+
+Le projet contient également des scripts permettant de récupérer et gérer différentes ressources associées, comme les logos d'équipes et les bannières de tournois.
+
+---
+
+## 🧱 Architecture
+
+Le projet est divisé en trois services principaux :
+
+```text
+┌─────────────────────────────────────┐
+│          Interface Web PHP          │
+│                                     │
+│ Équipes • Joueurs • Matchs          │
+│ Tournois • Prédictions              │
+└──────────────────┬──────────────────┘
+                   │ HTTP
+                   ▼
+┌─────────────────────────────────────┐
+│       API REST Node.js / Express    │
+│                                     │
+│ Routes • Contrôleurs • Auth JWT     │
+│ Imports • Logique métier            │
+└──────────────────┬──────────────────┘
+                   │ Prisma ORM
+                   ▼
+┌─────────────────────────────────────┐
+│          PostgreSQL                 │
+│                                     │
+│ Équipes • Joueurs • Matchs          │
+│ Tournois • Utilisateurs             │
+│ Prédictions                         │
+└─────────────────────────────────────┘
+```
+
+Chaque partie est exécutée dans son propre conteneur Docker et communique avec les autres services à travers le réseau Docker.
+
+---
+
+## 🔌 API REST
+
+Le backend est développé avec **Node.js, TypeScript et Express**.
+
+L'API expose différents endpoints permettant notamment de travailler avec :
+
+```text
+/teams
+/players
+/matches
+/tournaments
+/predictions
+```
+
+Elle permet de consulter les données nécessaires au site et de réaliser les opérations liées aux différentes fonctionnalités de l'application.
+
+Le projet utilise une organisation séparant :
+
+- les **routes** ;
+- les **contrôleurs** ;
+- la logique d'accès aux données ;
+- les scripts d'import ;
+- l'authentification.
+
+L'API dispose également d'une documentation **Swagger / OpenAPI**.
+
+---
+
+## 🗄️ Base de données
+
+Les données sont stockées dans une base **PostgreSQL**.
+
+L'accès à la base depuis l'API est réalisé avec **Prisma ORM**, qui permet de gérer :
+
+- le schéma de données ;
+- les relations entre les différentes entités ;
+- les migrations ;
+- l'accès aux données depuis TypeScript.
+
+Parmi les principales entités du projet :
+
+- `Teams`
+- `Players`
+- `Matches`
+- `Tournaments`
+- `Predictions`
+- `PredictionGames`
+- utilisateurs et données liées à l'authentification
+
+---
+
+## 🐳 Conteneurisation
+
+L'ensemble du projet est conteneurisé avec **Docker et Docker Compose**.
+
+Trois services principaux sont utilisés :
+
+```text
+web  → Serveur web PHP
+api  → API Node.js / Express
+db   → PostgreSQL
+```
+
+Cette architecture permet de lancer l'ensemble de l'environnement de développement de manière reproductible sans devoir installer séparément chaque service sur la machine.
+
+---
+
+## 🚀 Installation
 
 ### Prérequis
-- Docker & Docker Compose installés
 
-### Installation et lancement
+- Docker
+- Docker Compose
 
-#### ⚡ Méthode rapide (recommandée)
+### 1. Cloner le projet
 
-1. **Démarrer les conteneurs Docker** :
-   ```bash
-   docker compose up -d
-   ```
-
-2. **Initialiser le projet complètement** (une seule commande) :
-   ```bash
-   docker compose exec api npm run setup
-   ```
-   
-   Cette commande effectue **automatiquement** :
-   - ✅ Migrations de la base de données
-   - ✅ Génération du client Prisma
-   - ✅ Ensemencement initial (seed)
-   - ✅ Import des équipes (Liquipedia API)
-   - ✅ Import des joueurs (Liquipedia API)
-   - ✅ Import des matchs (Liquipedia API)
-   - ✅ Import des tournois (Liquipedia API)
-   - ✅ Téléchargement des logos d'équipes
-   - ✅ Correction des URLs des logos
-   - ✅ Téléchargement des bannières de tournois
-   - ✅ Réinitialisation des URLs de tournois
-
-3. **Accéder à l'application** :
-   - 🌐 Web : http://localhost:8080
-   - 🔌 API : http://localhost:3070
-   - 🗄️ PostgreSQL : localhost:5432
-
-#### 📋 Méthode manuelle (étape par étape)
-
-Si vous préférez exécuter les commandes individuellement :
-
-1. **Démarrer les conteneurs Docker** :
-   ```bash
-   docker compose up -d
-   ```
-
-2. **Exécuter les étapes séparément** :
-   ```bash
-   # Migrations et Prisma
-   docker compose exec api npm run db:migrate
-   docker compose exec api npm run db:generate
-   
-   # Ensemencement initial
-   docker compose exec api npm run db:seed
-   
-   # Imports de données depuis Liquipedia
-   docker compose exec api npm run import:teams
-   docker compose exec api npm run import:players
-   docker compose exec api npm run import:matches
-   docker compose exec api npm run import:tournament
-   
-   # Téléchargement d'assets
-   docker compose exec api npm run download:team-logos
-   docker compose exec api npm run fix:team-urls
-   docker compose exec api npm run download:tournament-assets
-   docker compose exec api npm run reset:tournament-urls
-   ```
-
-3. **Accéder à l'application** :
-   - 🌐 Web : http://localhost:8080
-   - 🔌 API : http://localhost:3070
-   - 🗄️ PostgreSQL : localhost:5432
-
----
-
-## 📘 Sujet de la SAÉ
-
-### 🎯 Contexte général
-
-Vous êtes une **équipe de développement** chargée de concevoir une application web permettant :
-
-* de **collecter et stocker des données réelles existantes**
-* de **gérer de nouveaux événements** liés à ces données
-* de **produire des indicateurs ou prédictions simples** sur les résultats possibles
-
-L’application reposera sur :
-
-* une **API REST**
-* une **base de données relationnelle**
-* une **interface web PHP**
-
----
-
-### 🧩 Choix du thème (libre)
-
-Chaque groupe choisira un **domaine disposant d’un volume de données exploitable**, par exemple :
-
-* 🎮 Tournois de jeux vidéo (e-sport)
-* ⚽ Championnats sportifs (football, basket, F1, etc.)
-* 🎲 Jeux de hasard (loteries, dés, cartes – sans argent réel)
-* 🏆 Compétitions culturelles ou artistiques
-* 📊 Classements, saisons, séries d’événements
-
-Le thème doit permettre :
-
-* des **résultats passés** (historique)
-* des **événements à venir**
-* des **comparaisons ou probabilités**
-
----
-
-### 🔮 Notion de prédiction attendue
-
-Les prédictions peuvent être **simples et explicables**, par exemple :
-
-* probabilité de victoire basée sur l’historique
-* moyenne, tendance, classement projeté
-* comparaison statistique entre entités
-
-❗ Aucun machine learning avancé n’est requis.
-
----
-
-## 🧱 Attendus techniques obligatoires
-
-### API (Node.js / TypeScript)
-
-* API REST structurée (Express)
-* Accès base de données via **Prisma**
-* Documentation **Swagger** complète
-* Gestion des erreurs et validations
-* Tests unitaires avec **Vitest**
-
-#### 🔬 Tests et qualité
-
-* Couverture de code **≥ 90 %** (statements, branches, functions)
-* Rapport de coverage fourni (`vitest --coverage`)
-* Tests automatisés reproductibles
-
----
-
-### Base de données
-
-* Modélisation relationnelle cohérente
-* Contraintes d’intégrité
-* Migrations Prisma versionnées
-
----
-
-### Application Web PHP
-
-* Consommation de l’API via HTTP
-* Affichage structuré des données
-* Interfaces de création / consultation
-* Gestion des erreurs API
-
----
-
-## 📦 Livrables attendus
-
-* Dépôt GitHub complet
-* README final enrichi :
-  * présentation du thème (découpes du code, structures des différentes parties, ...)
-  * schéma de données
-  * routes API
-  * logique de prédiction
-* Rapport de coverage Vitest
-* Jeu de données initial documenté
-
-Le site PHP devra : 
-* Présenter votre thématique
-* Présenter les membres de l'équipe (avec leurs rôles dans le projet et leurs réalisations)
-* Permettre la consultation des données
-* Permettre une inscription et une authentification qui donne accès à : 
-  * L'ajout de novuelles données
-  * La partie de prédiction
-
-L'identification est nécessaire depuis la partie PHP mais également depuis la partie API
-
----
-
-## 🎯 Objectifs pédagogiques
-
-* Concevoir et développer une **API REST** en Node.js / TypeScript
-* Manipuler une **base de données PostgreSQL** via un ORM (Prisma)
-* Consommer une API depuis une application web PHP
-* Travailler avec **Docker & Docker Compose**
-* Structurer un projet full‑stack professionnel
-* Travailler en équipe (Git, organisation, documentation)
-
----
-
-## 🧱 Architecture générale
-
-Le projet est composé de **3 services Docker**, chacun dans un sous‑répertoire dédié :
-
-```
-.
-├── api/            # API Node.js (TypeScript, Express, Prisma)
-├── db/             # Base de données PostgreSQL
-├── web/            # Serveur Apache + PHP
-├── deploy.sh       # Script d'auto déploiement avec redémarrage sur JrCanDev
-├── docker-compose.jrcandev.yml    # Version pour le déploiement sur JrCanDev
-├── docker-compose.yml             # Version par défaut, notamment pour le test en local
-├── .env
-└── README.md
-```
-
-Chaque service est **indépendant**, mais communique via le réseau Docker.
-
----
-
-## 🐳 Docker Compose (racine)
-
-### `docker-compose.yml`
-cf. ./docker-compose.yml
-
-### `docker-compose.jrcandev.yml` (utilisé pour le déploiement sur JrCanDev)
-cf. ./docker-compose.jrcandev.yml
-
----
-
-## 🔐 Variables d'environnement
-
-### `.env`
-```
-# Docker Compose
-NAME=sae-web-but2-votrenomcompletici
-
-# PostgreSQL
-POSTGRES_USER=sae_user
-POSTGRES_PASSWORD=sae_password
-POSTGRES_DB=sae_db
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-
-# API
-API_PORT=3070
-DATABASE_URL=postgresql://sae_user:sae_password@db:5432/sae_db
-```
-
----
-
-## 🗄️ Base de données (db)
-
-Aucun Dockerfile spécifique n’est requis ici. La base PostgreSQL est fournie via l’image officielle.
-
-Vous utiliserez **Prisma** côté API pour gérer le schéma et les migrations.
-
----
-
-## 🚀 API Node.js / TypeScript
-
-### `Dockerfile`
-cf. ./api/Dockerfile
-
-### `Dockerfile.jrcandev`
-cf. ./api/Dockerfile.jrcandev
-
-### `package.json`
-cf. ./api/package.json
-
-### `tsconfig.json`
-cf. ./api/tsconfig.json
-
-### `index.ts`
-cf. ./api/src/index.ts
-
----
-
-## 🌐 Serveur Web PHP
-
-### `Dockerfile`
-cf. ./web/Dockerfile
-
-### `index.php`
-cf. ./web/src/index.php
-
----
-
-## ▶️ Lancer le projet
-
-À la racine du projet, commencez par créer votre .env en le complétant correctement, et ensuite vérifiez qu'il est bien considéré par docker avec la commande : 
 ```bash
-docker compose config
+git clone <url-du-repo>
+cd <nom-du-projet>
 ```
-Vous devriez voir les informations de vos differents conteneurs, et notamment l'interpretation de votre NAME dans les différents ``container_name``. si vous voyez encore apparaitre ``${NAME}_postgres``, ``${NAME}_api``, et ``${NAME}_web``, alors votre ``.env`` n'est pas correct et doit être ajusté avant d'aller plus loin.
 
-A présent, le réseau web pour vos conteneurs dockers doit être présent sur votre machine. Si il ne l'est pas encore, vous pouvez le créer avec la commande : 
+### 2. Démarrer les conteneurs
+
 ```bash
-docker network create web
+docker compose up -d
 ```
 
-Si tout est OK, vous pouvez construire et lancer votre projet en l'état pour vérifier que la base est opérationnelle avec la commande : 
+### 3. Initialiser le projet
+
+Lors du premier lancement :
+
 ```bash
-docker compose up --build
+docker compose exec api npm run setup
 ```
 
-Accès aux services :
-### En version locale
-* 🌍 Application PHP : [http://localhost:8080](http://localhost:8080)
-* 🔌 API : [http://localhost:3070/api](http://localhost:3070/api)
-* ❤️ Healthcheck API : [http://localhost:3070/api/health](http://localhost:3070/api/health)
-* 🐘 PostgreSQL : localhost:5432
+Cette commande initialise automatiquement différents éléments du projet :
 
-Lors du premier lancement du projet, vérifiez ces 2 éléments
-* http://localhost:8080/ --> Devrait afficher "SAÉ BUT2 – Application Web PHP"
-* http://localhost:3070/api/health --> Devrait afficher "{"status":"ok","api":"up","database":"up"}"
-
-La partie déploiement sur un environnement jrcandev est détaillée un peu plus bas dans ce document, mais dans tous les cas, l'environnement local doit **TOUJOURS** être opérationnel (il pourra être utilisé pour l'évaluation de votre travail).
+- migrations de la base de données ;
+- génération du client Prisma ;
+- initialisation des données ;
+- import des équipes ;
+- import des joueurs ;
+- import des matchs ;
+- import des tournois ;
+- récupération des ressources associées.
 
 ---
 
-## 📚 Travail attendu 
+## ▶️ Accès aux services
 
-Chaque groupe devra notamment :
-* Concevoir le **schéma de base de données**
-* Implémenter des **routes API REST documentées (Swagger)**
-* Ajouter des **tests unitaires** (Vitest)
-* Consommer l’API depuis le site PHP
-* Gérer les erreurs, les validations, la sécurité
-* Documenter son travail
+Une fois les conteneurs lancés :
 
-## Note complémentaire !
-Assurez-vous que lorsque **quelqu'un d'autre que vous** télécharge votre dépôt final, il est complet, avec les données et est executable en l'état pour pouvoir vous évaluer ;-)
-
-## Déploiement JrCanDev 
-Le projet devra être déployé sur JrCanDev pour être accessible pour les enseignants chargés de l’évaluation de la SAE. 
-Vous solliciterez donc un environnement spécifique sur JrCanDev. Ce dernier sera en lien avec la branche ``jrcandev`` (que vous devrez donc **impérativement** avoir sur votre dépôt gitHub) par le biais d’un webhook.
-
-Un (**et 1 seul**) étudiant de chaque groupe fera la demande sur [le discord de JrCanDev](https://discord.gg/hmfnabKSUB) dans le salon ``#hébergement-projets`` , et si vous avez des demandes techniques particulières, vous passerez par le salon ``#demande-assistance`` sur ce même serveur.
-
-**IMPORTANT**
-Un certain nombre d'éléments devront être ajustés sur votre dépot gitHub pour que le process de CI/CD soit pleinement fonctionnel, et vous aurez besoin de valider les éléments avec les personnes de JrCanDev (qui ne sont pas à disposition H24) donc assurez-vous que cette mise en place soit opérationnel **au plus tôt** durant votre projet.
-
-Pour information, durant la journée du Mercredi 25, nous serons disponibles pour vous accompagner sur ce sujet spécifiquement.
-
-Vous documenterez la procédure permettant de déployer votre projet à partir des sources (paramétrage du dépôt, étapes d’initialisation, quel déclencheur, dans quel contexte, …).
-
-### Sur votre version hébergée sur JrCanDev, vous devriez donc avoir 
-* 🌍 Application PHP : [https://nomDeVotreProjet.jrcan.dev/](https://nomDeVotreProjet.jrcan.dev)
-* 🔌 API : [https://nomDeVotreProjet.jrcan.dev/api](https://nomDeVotreProjet.jrcan.dev/api)
-* ❤️ Healthcheck API : [https://nomDeVotreProjet.jrcan.dev/api/health](https://nomDeVotreProjet.jrcan.dev/api/health)
-* 🐘 PostgreSQL : [https://nomDeVotreProjet.jrcan.dev:5432](https://nomDeVotreProjet.jrcan.dev:5432)
-
-Lors du premier déploiement de votre projet sur JrCanDev, vérifiez ces 2 éléments
-* https://nomDeVotreProjet.jrcan.dev/ --> Devrait afficher "SAÉ BUT2 – Application Web PHP"
-* https://nomDeVotreProjet.jrcan.dev/api/health --> Devrait afficher "{"status":"ok","api":"up","database":"up"}"
+```text
+Application web : http://localhost:8080
+API             : http://localhost:3070
+PostgreSQL      : localhost:5432
+```
 
 ---
 
-## 🧠 Quelques conseils pédagogiques
-* Bien identifier votre sujet, les données dont vous aurez besoin
-* Vous assurer de pouvoir créer / récupérer un jeu de données suffisant pour vos prédictions
-* Réaliser votre schema pour Prisma (sans oublier la migration et le generate)
-* Ajouter vos données (idealement d'une manière propre via le seed ^_^ )
-* Tester l’API indépendamment (Postman, Swagger)
-* Versionner régulièrement (1 nouvelle fonctionnalité = 1 commit)
-* Tout cela bien évidemment en se répartissant clairement les rôles
+## 🛠️ Technologies utilisées
 
-Bon courage et bon dev 🚀
-
+- **PHP** — interface web
+- **HTML / CSS** — structure et mise en forme des pages
+- **TypeScript** — développement de l'API
+- **Node.js** — environnement d'exécution du backend
+- **Express** — API REST
+- **PostgreSQL** — base de données relationnelle
+- **Prisma** — ORM et gestion des migrations
+- **JWT** — authentification
+- **Swagger / OpenAPI** — documentation de l'API
+- **Liquipedia API** — récupération de données e-sport
+- **Docker / Docker Compose** — conteneurisation des différents services
 
 ---
 
+## 👥 Contexte du projet
 
+Ce projet a été réalisé **en équipe de 4** durant le quatrième semestre de BUT Informatique.
+
+Le développement s'est déroulé du **23 au 27 mars 2026**.
+
+Il avait pour objectif de mettre en pratique la conception d'une application web complète reposant sur plusieurs services indépendants et communicants.
+
+Ce projet m'a notamment permis de travailler sur :
+
+- la conception d'une architecture full-stack ;
+- le développement d'une API REST ;
+- la communication entre un site web et une API ;
+- la modélisation d'une base de données relationnelle ;
+- l'utilisation d'un ORM avec Prisma ;
+- la mise en place d'une authentification JWT ;
+- l'import de données depuis une API externe ;
+- la création de fonctionnalités basées sur des données statistiques ;
+- la conteneurisation d'une application avec Docker ;
+- la structuration d'un backend en routes et contrôleurs ;
+- le travail en équipe avec Git et GitHub.
+
+---
+
+## 📅 Réalisation
+
+**23 – 27 mars 2026** — Deuxième année de BUT Informatique, semestre 4.
